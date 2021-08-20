@@ -39,7 +39,7 @@ export default async function listen(
 
   try {
     // Start listening to queue
-    await queue.process(maxConcurrency, handler(dispatch))
+    queue.process(maxConcurrency, handler(dispatch))
 
     return { status: 'ok' }
   } catch (error) {
