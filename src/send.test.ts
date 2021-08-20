@@ -1,4 +1,5 @@
 import ava, { TestInterface } from 'ava'
+import sinon = require('sinon')
 import Bull = require('bull')
 import connect from './connect'
 
@@ -30,7 +31,7 @@ const action = {
   meta: {},
 }
 
-// Tests
+// Tests -- action
 
 test('should send data and return status and data', async (t) => {
   const { queue, namespace } = t.context
@@ -91,4 +92,133 @@ test('should return error when no connection', async (t) => {
 
   t.is(ret.status, 'error', ret.error)
   t.is(ret.error, 'Cannot send action to queue. No queue')
+})
+
+// Tests -- clean
+
+test('should clean waiting jobs with SERVICE action', async (t) => {
+  const { queue, namespace } = t.context
+  const connection = await connect({ queue, namespace }, null, null)
+  const action = {
+    type: 'SERVICE',
+    payload: { type: 'cleanWaiting' },
+    meta: {},
+  }
+  const job = {}
+  await queue.add(job)
+
+  const ret = await send(action, connection)
+
+  t.is(ret.status, 'ok', ret.error)
+  const jobs = await queue.getWaiting()
+  t.is(jobs.length, 0)
+})
+
+test('should not clean waiting jobs newer than given ms with SERVICE action', async (t) => {
+  const { queue, namespace } = t.context
+  const connection = await connect({ queue, namespace }, null, null)
+  const action = {
+    type: 'SERVICE',
+    payload: { type: 'cleanWaiting', olderThanMs: 7200000 },
+    meta: {},
+  }
+  const job = {}
+  await queue.add(job)
+
+  const ret = await send(action, connection)
+
+  t.is(ret.status, 'ok', ret.error)
+  const jobs = await queue.getWaiting()
+  t.is(jobs.length, 1)
+})
+
+test('should clean scheduled jobs with SERVICE action', async (t) => {
+  const { queue, namespace } = t.context
+  const connection = await connect({ queue, namespace }, null, null)
+  const action = {
+    type: 'SERVICE',
+    payload: { type: 'cleanScheduled' },
+    meta: {},
+  }
+  const job = {}
+  await queue.add(job, { delay: 60000 })
+
+  const ret = await send(action, connection)
+
+  t.is(ret.status, 'ok', ret.error)
+  const jobs = await queue.getDelayed()
+  t.is(jobs.length, 0)
+})
+
+test('should clean completed jobs with SERVICE action', async (t) => {
+  const { queue, namespace } = t.context
+  const cleanSpy = sinon.spy(queue, 'clean')
+  const connection = await connect({ queue, namespace }, null, null)
+  const action = {
+    type: 'SERVICE',
+    payload: { type: 'cleanCompleted' },
+    meta: {},
+  }
+
+  const ret = await send(action, connection)
+
+  t.is(ret.status, 'ok', ret.error)
+  t.is(cleanSpy.callCount, 1)
+  t.is(cleanSpy.args[0][0], 0)
+  t.is(cleanSpy.args[0][1], 'completed')
+})
+
+test('should clean completed jobs older than given ms with SERVICE action', async (t) => {
+  const { queue, namespace } = t.context
+  const cleanSpy = sinon.spy(queue, 'clean')
+  const connection = await connect({ queue, namespace }, null, null)
+  const action = {
+    type: 'SERVICE',
+    payload: { type: 'cleanCompleted', olderThanMs: 3600000 },
+    meta: {},
+  }
+
+  const ret = await send(action, connection)
+
+  t.is(ret.status, 'ok', ret.error)
+  t.is(cleanSpy.callCount, 1)
+  t.is(cleanSpy.args[0][0], 3600000)
+  t.is(cleanSpy.args[0][1], 'completed')
+})
+
+test('should clean more job types with the same SERVICE action', async (t) => {
+  const { queue, namespace } = t.context
+  const connection = await connect({ queue, namespace }, null, null)
+  const action = {
+    type: 'SERVICE',
+    payload: { type: ['cleanWaiting', 'cleanScheduled'] },
+    meta: {},
+  }
+  const job = {}
+  await queue.add(job)
+  await queue.add(job, { delay: 60000 })
+
+  const ret = await send(action, connection)
+
+  t.is(ret.status, 'ok', ret.error)
+  const jobsWaiting = await queue.getWaiting()
+  t.is(jobsWaiting.length, 0)
+  const jobsScheduled = await queue.getDelayed()
+  t.is(jobsScheduled.length, 0)
+})
+
+test('should return error when cleaning fails', async (t) => {
+  const { queue, namespace } = t.context
+  sinon.stub(queue, 'clean').rejects(new Error('No queue!'))
+  const connection = await connect({ queue, namespace }, null, null)
+  const action = {
+    type: 'SERVICE',
+    payload: { type: 'cleanCompleted' },
+    meta: {},
+  }
+
+  const ret = await send(action, connection)
+
+  t.is(ret.status, 'error', ret.error)
+  t.is(ret.error, 'Cleaning of queue failed. Error: No queue!')
 })
