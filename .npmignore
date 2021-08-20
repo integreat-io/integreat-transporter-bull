@@ -5,3 +5,5 @@ dist/tests/
 .*
 tsconfig.json
 *.config.js
+redisdata
+docker-compose.yml
