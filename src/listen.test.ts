@@ -33,6 +33,27 @@ test('should listen to queue and dispatch action', async (t) => {
   t.deepEqual(processStub.args[0][0], 1) // Default max concurrency
 })
 
+test('should wrap non-action jobs in a REQUEST action', async (t) => {
+  const processStub = sinon.stub()
+  const queue = { process: processStub } as unknown as Queue
+  const connection = { status: 'ok', queue, namespace: 'great' }
+  const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
+  const job = { id: 'someJob' }
+  const expectedAction = {
+    type: 'REQUEST',
+    payload: { data: job },
+    meta: { id: 'job2' },
+  }
+
+  const ret = await listen(dispatch, connection)
+  const processFn = processStub.args[0][1] // Get the internal job handler
+  await processFn({ data: job, id: 'job2' }) // Call internal handler to make sure it calls dispatch
+
+  t.deepEqual(ret.status, 'ok')
+  t.is(dispatch.callCount, 1)
+  t.deepEqual(dispatch.args[0][0], expectedAction)
+})
+
 test('should not override action id', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue

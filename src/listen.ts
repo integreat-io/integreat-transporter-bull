@@ -1,8 +1,11 @@
 import { Job } from 'bull'
-import { isObject } from './utils/is'
+import { isObject, isAction } from './utils/is'
 import { Connection, Dispatch, Response, Action } from './types'
 
 const OK_STATUSES = ['ok', 'noaction', 'queued']
+
+const wrapIfNotAction = (job: unknown) =>
+  isAction(job) ? job : { type: 'REQUEST', payload: { data: job } }
 
 const setJobIdWhenNoActionId = (action: Action, id?: string | number) =>
   action.meta?.id || !id
@@ -13,8 +16,8 @@ const setJobIdWhenNoActionId = (action: Action, id?: string | number) =>
       }
 
 const handler = (dispatch: Dispatch) =>
-  async function processJob(job: Job<Action>) {
-    const action = setJobIdWhenNoActionId(job.data, job.id)
+  async function processJob(job: Job) {
+    const action = setJobIdWhenNoActionId(wrapIfNotAction(job.data), job.id)
     const response = await dispatch(action)
 
     if (isObject(response) && typeof response.status === 'string') {
