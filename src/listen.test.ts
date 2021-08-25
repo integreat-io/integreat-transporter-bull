@@ -22,36 +22,42 @@ test('should listen to queue and dispatch action', async (t) => {
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
   const expected = { status: 'ok' }
   const expectedAction = { ...action, meta: { id: 'job1' } }
+  const expectedQueueResponse = { status: 'ok', data: [] }
 
-  const ret = await listen(dispatch, connection)
+  const listenResponse = await listen(dispatch, connection)
   const processFn = processStub.args[0][1] // Get the internal job handler
-  await processFn({ data: action, id: 'job1' }) // Call internal handler to make sure it calls dispatch
+  const processResponse = await processFn({ data: action, id: 'job1' }) // Call internal handler to make sure it calls dispatch
 
-  t.deepEqual(ret, expected)
+  t.deepEqual(listenResponse, expected)
   t.is(dispatch.callCount, 1)
   t.deepEqual(dispatch.args[0][0], expectedAction)
   t.deepEqual(processStub.args[0][0], 1) // Default max concurrency
+  t.deepEqual(processResponse, expectedQueueResponse)
 })
 
-test('should wrap non-action jobs in a REQUEST action', async (t) => {
+test('should wrap non-action jobs in a REQUEST action and unwrap response', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, namespace: 'great' }
-  const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
+  const dispatch = sinon
+    .stub()
+    .resolves({ status: 'ok', data: { ok: true, context: {} } })
   const job = { id: 'someJob' }
   const expectedAction = {
     type: 'REQUEST',
     payload: { data: job },
     meta: { id: 'job2' },
   }
+  const expectedQueueResponse = { ok: true, context: {} }
 
-  const ret = await listen(dispatch, connection)
+  const listenResponse = await listen(dispatch, connection)
   const processFn = processStub.args[0][1] // Get the internal job handler
-  await processFn({ data: job, id: 'job2' }) // Call internal handler to make sure it calls dispatch
+  const processResponse = await processFn({ data: job, id: 'job2' }) // Call internal handler to make sure it calls dispatch
 
-  t.deepEqual(ret.status, 'ok')
+  t.deepEqual(listenResponse.status, 'ok')
   t.is(dispatch.callCount, 1)
   t.deepEqual(dispatch.args[0][0], expectedAction)
+  t.deepEqual(processResponse, expectedQueueResponse)
 })
 
 test('should not override action id', async (t) => {

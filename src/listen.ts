@@ -4,8 +4,10 @@ import { Connection, Dispatch, Response, Action } from './types'
 
 const OK_STATUSES = ['ok', 'noaction', 'queued']
 
-const wrapIfNotAction = (job: unknown) =>
-  isAction(job) ? job : { type: 'REQUEST', payload: { data: job } }
+const wrapJobInAction = (job: unknown) => ({
+  type: 'REQUEST',
+  payload: { data: job },
+})
 
 const setJobIdWhenNoActionId = (action: Action, id?: string | number) =>
   action.meta?.id || !id
@@ -17,12 +19,13 @@ const setJobIdWhenNoActionId = (action: Action, id?: string | number) =>
 
 const handler = (dispatch: Dispatch) =>
   async function processJob(job: Job) {
-    const action = setJobIdWhenNoActionId(wrapIfNotAction(job.data), job.id)
-    const response = await dispatch(action)
+    const wrapJob = !isAction(job.data)
+    const action = wrapJob ? wrapJobInAction(job.data) : job.data
+    const response = await dispatch(setJobIdWhenNoActionId(action, job.id))
 
     if (isObject(response) && typeof response.status === 'string') {
       if (OK_STATUSES.includes(response.status)) {
-        return response
+        return wrapJob ? response.data : response
       } else {
         throw new Error(`[${response.status}] ${response.error}`)
       }
