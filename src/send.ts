@@ -50,7 +50,9 @@ export default async function send(
 ): Promise<Response<JobData>> {
   const { queue } = connection || {}
   if (!queue) {
-    debugLog(`Error sending to bull queue '${connection?.namespace}': No queue`)
+    debugLog(
+      `Cannot send action to bull queue '${connection?.namespace}': No queue`
+    )
     return { status: 'error', error: 'Cannot send action to queue. No queue' }
   }
 
@@ -67,7 +69,9 @@ export default async function send(
   try {
     await queue.isReady() // Don't add job until queue is ready
     const job = await queue.add(action, options)
-    debugLog(`Added job '${job}' to queue ${connection?.namespace}'`)
+    debugLog(
+      `Added job '${job.id}' to queue ${connection?.namespace}': ${action}`
+    )
     return { status: 'ok', data: dataFromJob(job) }
   } catch (error) {
     debugLog(`Error sending to bull queue ${connection?.namespace}'. ${error}`)

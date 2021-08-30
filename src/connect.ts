@@ -1,4 +1,5 @@
 import Bull = require('bull')
+import debug = require('debug')
 import { isObject } from './utils/is'
 import {
   Connection,
@@ -6,6 +7,8 @@ import {
   RedisOptions,
   Authentication,
 } from './types'
+
+const debugLog = debug('integreat:transporter:bull')
 
 function redisOptionsWithAuth(
   redis?: RedisOptions | string | null,
@@ -58,17 +61,24 @@ export default async function (
     connection.status === 'ok' &&
     !isDisconnected(connection.queue)
   ) {
+    debugLog(`Reusing bull queue '${connection.namespace}'`)
     return connection
   }
 
   const queue =
     queueFromOptions ??
     createQueue(namespace, redis, authentication, keyPrefix, bullSettings)
+  debugLog(`Created bull queue '${namespace}'`)
 
   if (waitForReady) {
     try {
+      debugLog(`Waiting for bull queue '${namespace} to be ready ...'`)
       await queue.isReady()
+      debugLog(`Bull queue '${namespace} is ready'`)
     } catch (error) {
+      debugLog(
+        `Connection to bull queue '${namespace} failed. ${error.message}'`
+      )
       return {
         status: 'error',
         error: `Connection to Redis failed: ${error.message}`,

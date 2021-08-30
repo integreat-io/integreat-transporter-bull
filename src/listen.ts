@@ -1,6 +1,9 @@
 import { Job } from 'bull'
+import debug = require('debug')
 import { isObject, isAction } from './utils/is'
 import { Connection, Dispatch, Response, Action } from './types'
+
+const debugLog = debug('integreat:transporter:bull')
 
 const OK_STATUSES = ['ok', 'noaction', 'queued']
 
@@ -40,15 +43,18 @@ export default async function listen(
 ): Promise<Response> {
   const { queue, maxConcurrency = 1 } = connection || {}
   if (!queue) {
+    debugLog(`Cannot listen to queue '${connection?.namespace}'. No queue`)
     return { status: 'error', error: 'Cannot listen to queue. No queue' }
   }
 
   try {
     // Start listening to queue
     queue.process(maxConcurrency, handler(dispatch))
+    debugLog(`Listening to queue '${connection?.namespace}'`)
 
     return { status: 'ok' }
   } catch (error) {
-    return { status: 'error', error: `Could not listen to queue. ${error}` }
+    debugLog(`Cannot listen to queue '${connection?.namespace}'. ${error}`)
+    return { status: 'error', error: `Cannot listen to queue. ${error}` }
   }
 }

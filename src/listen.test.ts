@@ -181,7 +181,7 @@ test('should return error when listening fails', async (t) => {
   const connection = { status: 'ok', queue, namespace: 'great' }
   const expected = {
     status: 'error',
-    error: 'Could not listen to queue. Error: Will not listen',
+    error: 'Cannot listen to queue. Error: Will not listen',
   }
 
   const ret = await listen(dispatch, connection)
