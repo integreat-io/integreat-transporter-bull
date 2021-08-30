@@ -1,5 +1,8 @@
+import debug = require('debug')
 import { Job, JobId, JobOptions, Queue } from 'bull'
 import { Action, Response, Connection } from './types'
+
+const debugLog = debug('integreat:transporter:bull')
 
 export interface JobData {
   id: JobId
@@ -47,10 +50,12 @@ export default async function send(
 ): Promise<Response<JobData>> {
   const { queue } = connection || {}
   if (!queue) {
+    debugLog(`Error sending to bull queue '${connection?.namespace}': No queue`)
     return { status: 'error', error: 'Cannot send action to queue. No queue' }
   }
 
   if (action.type === 'SERVICE') {
+    debugLog(`SERVICE action sent to bull queue '${connection?.namespace}'`)
     return runServiceAction(action, queue)
   }
 
@@ -62,9 +67,10 @@ export default async function send(
   try {
     await queue.isReady() // Don't add job until queue is ready
     const job = await queue.add(action, options)
-
+    debugLog(`Added job '${job}' to queue ${connection?.namespace}'`)
     return { status: 'ok', data: dataFromJob(job) }
   } catch (error) {
+    debugLog(`Error sending to bull queue ${connection?.namespace}'. ${error}`)
     return { status: 'error', error: `Sending to queue failed. ${error}` }
   }
 }
