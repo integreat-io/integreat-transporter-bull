@@ -70,7 +70,9 @@ export default async function send(
     await queue.isReady() // Don't add job until queue is ready
     const job = await queue.add(action, options)
     debugLog(
-      `Added job '${job.id}' to queue ${connection?.namespace}': ${action}`
+      `Added job '${job.id}' to queue ${
+        connection?.namespace
+      }': ${JSON.stringify(action)}`
     )
     return { status: 'ok', data: dataFromJob(job) }
   } catch (error) {
