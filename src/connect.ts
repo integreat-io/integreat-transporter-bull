@@ -51,6 +51,8 @@ export default async function (
     keyPrefix,
     bullSettings,
     maxConcurrency,
+    wrapSourceService,
+    defaultIdentId,
     waitForReady = true,
   }: EndpointOptions,
   authentication: Authentication | null,
@@ -77,15 +79,24 @@ export default async function (
       debugLog(`Bull queue '${namespace} is ready'`)
     } catch (error) {
       debugLog(
-        `Connection to bull queue '${namespace} failed. ${error.message}'`
+        `Connection to bull queue '${namespace} failed. ${
+          (error as Error).message
+        }'`
       )
       return {
         status: 'error',
-        error: `Connection to Redis failed: ${error.message}`,
+        error: `Connection to Redis failed: ${(error as Error).message}`,
         namespace,
       }
     }
   }
 
-  return { status: 'ok', queue, namespace, maxConcurrency }
+  return {
+    status: 'ok',
+    queue,
+    namespace,
+    maxConcurrency,
+    wrapSourceService,
+    defaultIdentId,
+  }
 }

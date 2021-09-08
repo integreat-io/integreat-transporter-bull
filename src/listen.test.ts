@@ -45,8 +45,68 @@ test('should wrap non-action jobs in a REQUEST action and unwrap response', asyn
   const job = { id: 'someJob' }
   const expectedAction = {
     type: 'REQUEST',
-    payload: { data: job },
+    payload: { data: job, sourceService: 'bull' },
     meta: { id: 'job2' },
+  }
+  const expectedQueueResponse = { ok: true, context: {} }
+
+  const listenResponse = await listen(dispatch, connection)
+  const processFn = processStub.args[0][1] // Get the internal job handler
+  const processResponse = await processFn({ data: job, id: 'job2' }) // Call internal handler to make sure it calls dispatch
+
+  t.deepEqual(listenResponse.status, 'ok')
+  t.is(dispatch.callCount, 1)
+  t.deepEqual(dispatch.args[0][0], expectedAction)
+  t.deepEqual(processResponse, expectedQueueResponse)
+})
+
+test('should set sourceService from connection when wrapping in action', async (t) => {
+  const processStub = sinon.stub()
+  const queue = { process: processStub } as unknown as Queue
+  const connection = {
+    status: 'ok',
+    queue,
+    namespace: 'great',
+    wrapSourceService: 'queue',
+  }
+  const dispatch = sinon
+    .stub()
+    .resolves({ status: 'ok', data: { ok: true, context: {} } })
+  const job = { id: 'someJob' }
+  const expectedAction = {
+    type: 'REQUEST',
+    payload: { data: job, sourceService: 'queue' },
+    meta: { id: 'job2' },
+  }
+  const expectedQueueResponse = { ok: true, context: {} }
+
+  const listenResponse = await listen(dispatch, connection)
+  const processFn = processStub.args[0][1] // Get the internal job handler
+  const processResponse = await processFn({ data: job, id: 'job2' }) // Call internal handler to make sure it calls dispatch
+
+  t.deepEqual(listenResponse.status, 'ok')
+  t.is(dispatch.callCount, 1)
+  t.deepEqual(dispatch.args[0][0], expectedAction)
+  t.deepEqual(processResponse, expectedQueueResponse)
+})
+
+test('should set ident from connection when wrapping in action', async (t) => {
+  const processStub = sinon.stub()
+  const queue = { process: processStub } as unknown as Queue
+  const connection = {
+    status: 'ok',
+    queue,
+    namespace: 'great',
+    defaultIdentId: 'queuer',
+  }
+  const dispatch = sinon
+    .stub()
+    .resolves({ status: 'ok', data: { ok: true, context: {} } })
+  const job = { id: 'someJob' }
+  const expectedAction = {
+    type: 'REQUEST',
+    payload: { data: job, sourceService: 'bull' },
+    meta: { id: 'job2', ident: { id: 'queuer' } },
   }
   const expectedQueueResponse = { ok: true, context: {} }
 

@@ -34,6 +34,8 @@ export interface EndpointOptions extends Record<string, unknown> {
   redis?: string | RedisOptions
   keyPrefix?: string
   bullSettings?: AdvancedSettings
+  wrapSourceService?: string
+  defaultIdentId?: string
   waitForReady?: boolean
 }
 
@@ -114,6 +116,8 @@ export interface Connection extends Record<string, unknown> {
   queue?: Queue
   namespace?: string
   maxConcurrency?: number
+  wrapSourceService?: string
+  defaultIdentId?: string
 }
 
 export interface Authentication extends Record<string, unknown> {

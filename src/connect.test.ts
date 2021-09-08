@@ -107,13 +107,22 @@ test('should use default namespace when none is provided', async (t) => {
   t.is(conn?.queue?.name, 'great')
 })
 
-test('should set maxConcurrency on connection object', async (t) => {
-  const options = { namespace: 'ns1', maxConcurrency: 5, waitForReady: false }
+test('should pass on some options to connection object', async (t) => {
+  const options = {
+    namespace: 'ns1',
+    maxConcurrency: 5,
+    waitForReady: false,
+    wrapSourceService: 'queue',
+    defaultIdentId: 'queuer',
+  }
 
   const conn = await connect(options, null, null)
 
   t.is(conn?.status, 'ok')
   t.is(conn?.maxConcurrency, 5)
+  t.is(conn?.wrapSourceService, 'queue')
+  t.is(conn?.defaultIdentId, 'queuer')
+  t.is(conn?.waitForReady, undefined)
 })
 
 test('should pass on bull advanced settings object', async (t) => {
