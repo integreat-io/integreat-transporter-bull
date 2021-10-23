@@ -1,6 +1,6 @@
 {
   "name": "integreat-transporter-bull",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Bull Queue Transporter for Integreat",
   "author": "Kjell-Morten Bratsberg Thorsen <kjellmorten@integreat.io>",
   "license": "ISC",
