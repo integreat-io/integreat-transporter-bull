@@ -1,7 +1,15 @@
 import { Job } from 'bull'
 import debug = require('debug')
 import { isObject, isAction } from './utils/is'
-import { Connection, Dispatch, Response, Action } from './types'
+import { Connection, Response, Action } from './types'
+
+export interface PromiseWithProgress<T> extends Promise<T> {
+  onProgress?: (cb: (progress?: number) => void) => void
+}
+
+export interface DispatchWithProgress<T = unknown> {
+  (action: Action | null): PromiseWithProgress<Response<T>>
+}
 
 const debugLog = debug('integreat:transporter:bull')
 
@@ -26,20 +34,26 @@ const setJobIdWhenNoActionId = (action: Action, id?: string | number) =>
       }
 
 const handler = (
-  dispatch: Dispatch,
+  dispatch: DispatchWithProgress,
   wrapSourceService: string,
   defaultIdentId?: string
 ) =>
   async function processJob(job: Job) {
-    const wrapJob = !isAction(job.data)
-    const action = wrapJob
+    const shouldWrapJob = !isAction(job.data)
+    const action = shouldWrapJob
       ? wrapJobInAction(job.data, wrapSourceService, defaultIdentId)
       : job.data
-    const response = await dispatch(setJobIdWhenNoActionId(action, job.id))
+    const dispatchPromise = dispatch(setJobIdWhenNoActionId(action, job.id))
+
+    // Report function if dispatch support onProgress
+    if (typeof dispatchPromise.onProgress === 'function') {
+      dispatchPromise.onProgress(job.progress)
+    }
+    const response = await dispatchPromise
 
     if (isObject(response) && typeof response.status === 'string') {
       if (OK_STATUSES.includes(response.status)) {
-        return wrapJob ? response.data : response
+        return shouldWrapJob ? response.data : response
       } else {
         throw new Error(`[${response.status}] ${response.error}`)
       }
@@ -49,7 +63,7 @@ const handler = (
   }
 
 export default async function listen(
-  dispatch: Dispatch,
+  dispatch: DispatchWithProgress,
   connection: Connection | null
 ): Promise<Response> {
   const {

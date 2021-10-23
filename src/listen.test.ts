@@ -151,6 +151,41 @@ test('should not set action id when job is missing id', async (t) => {
   t.deepEqual(dispatch.args[0][0], action)
 })
 
+test('should update job progress when handler function support it', async (t) => {
+  const progressStub = sinon.stub().resolves(undefined)
+  const processStub = sinon.stub()
+  const onProgressStub = sinon.stub()
+  const queue = { process: processStub } as unknown as Queue
+  const connection = { status: 'ok', queue, namespace: 'great' }
+  const dispatch = sinon.stub().callsFake(() => {
+    const p = new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ status: 'ok', data: [] })
+      }, 500)
+    })
+    return Object.assign(p, { onProgress: onProgressStub })
+  })
+  const expected = { status: 'ok' }
+  const expectedAction = { ...action, meta: { id: 'job1' } }
+  const expectedQueueResponse = { status: 'ok', data: [] }
+  const bullJob = { data: action, id: 'job1', progress: progressStub }
+
+  const listenResponse = await listen(dispatch, connection)
+  const processFn = processStub.args[0][1] // Get the internal job handler
+  const processResponse = await processFn(bullJob) // Call internal handler to make sure it calls dispatch
+  t.is(onProgressStub.callCount, 1)
+  const progressFn = onProgressStub.args[0][0]
+  progressFn(0.5)
+
+  t.is(progressStub.callCount, 1)
+  t.is(progressStub.args[0][0], 0.5)
+  t.deepEqual(listenResponse, expected)
+  t.is(dispatch.callCount, 1)
+  t.deepEqual(dispatch.args[0][0], expectedAction)
+  t.deepEqual(processStub.args[0][0], 1) // Default max concurrency
+  t.deepEqual(processResponse, expectedQueueResponse)
+})
+
 test('should reject when action response is error', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
