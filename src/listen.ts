@@ -47,7 +47,15 @@ const handler = (
 
     // Report function if dispatch support onProgress
     if (typeof dispatchPromise.onProgress === 'function') {
-      dispatchPromise.onProgress(job.progress)
+      dispatchPromise.onProgress(async function handleProgress(progress) {
+        debugLog(`Progress set to ${progress}`)
+        try {
+          await job.progress(progress)
+        } catch (err) {
+          debugLog(`Failed to update progress. ${err}`)
+        }
+        debugLog('Progress updated')
+      })
     }
     const response = await dispatchPromise
 
