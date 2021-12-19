@@ -175,10 +175,10 @@ test('should update job progress when handler function support it', async (t) =>
   const processResponse = await processFn(bullJob) // Call internal handler to make sure it calls dispatch
   t.is(onProgressStub.callCount, 1)
   const progressFn = onProgressStub.args[0][0]
-  progressFn(0.5)
+  progressFn(0.502)
 
   t.is(progressStub.callCount, 1)
-  t.is(progressStub.args[0][0], 0.5)
+  t.is(progressStub.args[0][0], 50)
   t.deepEqual(listenResponse, expected)
   t.is(dispatch.callCount, 1)
   t.deepEqual(dispatch.args[0][0], expectedAction)

@@ -48,13 +48,14 @@ const handler = (
     // Report function if dispatch support onProgress
     if (typeof dispatchPromise.onProgress === 'function') {
       dispatchPromise.onProgress(async function handleProgress(progress) {
-        debugLog(`Progress set to ${progress}`)
+        const progressPercent =
+          typeof progress === 'number' ? Math.round(progress * 100) : undefined
+        debugLog(`Progress set to ${progressPercent}`)
         try {
-          await job.progress(progress)
+          await job.progress(progressPercent)
         } catch (err) {
           debugLog(`Failed to update progress. ${err}`)
         }
-        debugLog('Progress updated')
       })
     }
     const response = await dispatchPromise
