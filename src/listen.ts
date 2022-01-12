@@ -80,23 +80,33 @@ export default async function listen(
     maxConcurrency = 1,
     wrapSourceService = 'bull',
     defaultIdentId,
+    namespace,
+    subNamespace,
   } = connection || {}
   if (!queue) {
-    debugLog(`Cannot listen to queue '${connection?.namespace}'. No queue`)
+    debugLog(`Cannot listen to queue '${namespace}'. No queue`)
     return { status: 'error', error: 'Cannot listen to queue. No queue' }
   }
 
   try {
     // Start listening to queue
-    queue.process(
-      maxConcurrency,
-      handler(dispatch, wrapSourceService, defaultIdentId)
-    )
-    debugLog(`Listening to queue '${connection?.namespace}'`)
+    if (subNamespace) {
+      queue.process(
+        subNamespace,
+        maxConcurrency,
+        handler(dispatch, wrapSourceService, defaultIdentId)
+      )
+    } else {
+      queue.process(
+        maxConcurrency,
+        handler(dispatch, wrapSourceService, defaultIdentId)
+      )
+    }
+    debugLog(`Listening to queue '${namespace}'`)
 
     return { status: 'ok' }
   } catch (error) {
-    debugLog(`Cannot listen to queue '${connection?.namespace}'. ${error}`)
+    debugLog(`Cannot listen to queue '${namespace}'. ${error}`)
     return { status: 'error', error: `Cannot listen to queue. ${error}` }
   }
 }

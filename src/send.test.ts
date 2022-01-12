@@ -33,7 +33,7 @@ const action = {
 
 // Tests -- action
 
-test('should send data and return status and data', async (t) => {
+test('should send job with action and return status and data', async (t) => {
   const { queue, namespace } = t.context
   const connection = await connect({ queue, namespace }, null, null)
 
@@ -43,12 +43,34 @@ test('should send data and return status and data', async (t) => {
   const jobs = await queue.getWaiting()
   t.is(jobs.length, 1)
   t.deepEqual(jobs[0].data, action)
-  const expected = {
+  const expectedData = {
     id: jobs[0].id,
     timestamp: jobs[0].timestamp,
-    name: jobs[0].name,
+    namespace: jobs[0].name,
   }
-  t.deepEqual(ret.data, expected)
+  t.deepEqual(ret.data, expectedData)
+})
+
+test('should send job to queue with sub namespace', async (t) => {
+  const { queue, namespace } = t.context
+  const connection = await connect(
+    { queue, namespace: namespace, subNamespace: `${namespace}_sub` },
+    null,
+    null
+  )
+
+  const ret = await send(action, connection)
+
+  t.is(ret.status, 'ok', ret.error)
+  const jobs = await queue.getWaiting()
+  t.is(jobs.length, 1)
+  t.deepEqual(jobs[0].data, action)
+  const expectedData = {
+    id: jobs[0].id,
+    timestamp: jobs[0].timestamp,
+    namespace: `${namespace}_sub`,
+  }
+  t.deepEqual(ret.data, expectedData)
 })
 
 test('should use action id as job id', async (t) => {

@@ -33,6 +33,27 @@ test('should connect to bull queue with redis url and default prefix', async (t)
   t.is(conn?.queue?.client.options.port, 6380)
 })
 
+test('should connect to bull queue with sub namespace', async (t) => {
+  const options = {
+    namespace: 'queue1',
+    subNamespace: 'ns1',
+    redis: 'redis://redis3.test:6380',
+    waitForReady: false,
+  }
+
+  const conn = await connect(options, null, null)
+
+  t.true(typeof conn === 'object' && conn !== null)
+  t.is(conn?.status, 'ok')
+  t.is(conn?.namespace, 'queue1')
+  t.is(conn?.subNamespace, 'ns1')
+  t.truthy(conn?.queue)
+  t.is(conn?.queue?.name, 'queue1')
+  t.is((conn?.queue as QueueWithInternals).keyPrefix, 'bull')
+  t.is(conn?.queue?.client.options.host, 'redis3.test')
+  t.is(conn?.queue?.client.options.port, 6380)
+})
+
 test('should connect to bull queue with specified prefix', async (t) => {
   const options = {
     namespace: 'ns1',

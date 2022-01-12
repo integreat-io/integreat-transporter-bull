@@ -1,14 +1,8 @@
 import debug = require('debug')
-import { Job, JobId, JobOptions, Queue } from 'bull'
-import { Action, Response, Connection } from './types'
+import { Job, JobOptions, Queue } from 'bull'
+import { Action, Response, Connection, JobData } from './types'
 
 const debugLog = debug('integreat:transporter:bull')
-
-export interface JobData {
-  id: JobId
-  timestamp: number
-  name: string
-}
 
 const ensureArray = <T>(value: T | T[]): T[] =>
   Array.isArray(value) ? value : [value]
@@ -16,7 +10,7 @@ const ensureArray = <T>(value: T | T[]): T[] =>
 const dataFromJob = ({ id, timestamp, name }: Job): JobData => ({
   id,
   timestamp,
-  name,
+  namespace: name,
 })
 
 async function runServiceAction(action: Action, queue: Queue) {
@@ -44,11 +38,24 @@ async function runServiceAction(action: Action, queue: Queue) {
   return { status }
 }
 
+async function push(
+  queue: Queue,
+  action: Action,
+  options: JobOptions,
+  namespace?: string
+) {
+  if (namespace) {
+    return await queue.add(namespace, action, options)
+  } else {
+    return await queue.add(action, options)
+  }
+}
+
 export default async function send(
   action: Action,
   connection: Connection | null
 ): Promise<Response<JobData>> {
-  const { queue } = connection || {}
+  const { queue, subNamespace } = connection || {}
   if (!queue) {
     debugLog(
       `Cannot send action to bull queue '${connection?.namespace}': No queue`
@@ -68,7 +75,7 @@ export default async function send(
 
   try {
     await queue.isReady() // Don't add job until queue is ready
-    const job = await queue.add(action, options)
+    const job = await push(queue, action, options, subNamespace)
     debugLog(
       `Added job '${job.id}' to queue ${
         connection?.namespace

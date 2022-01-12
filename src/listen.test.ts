@@ -31,7 +31,51 @@ test('should listen to queue and dispatch action', async (t) => {
   t.deepEqual(listenResponse, expected)
   t.is(dispatch.callCount, 1)
   t.deepEqual(dispatch.args[0][0], expectedAction)
-  t.deepEqual(processStub.args[0][0], 1) // Default max concurrency
+  t.is(processStub.args[0][0], 1) // Default max concurrency
+  t.deepEqual(processResponse, expectedQueueResponse)
+})
+
+test('should listen to sub namespace', async (t) => {
+  const processStub = sinon.stub()
+  const queue = { process: processStub } as unknown as Queue
+  const connection1 = {
+    status: 'ok',
+    queue,
+    namespace: 'great',
+    subNamespace: 'ns1',
+  }
+  const connection2 = {
+    status: 'ok',
+    queue,
+    namespace: 'great',
+    subNamespace: 'ns2',
+  }
+  const dispatch1 = sinon.stub().resolves({ status: 'ok', data: [] })
+  const dispatch2 = sinon.stub().resolves({ status: 'ok', data: [] })
+  const expected = { status: 'ok' }
+  const expectedAction = { ...action, meta: { id: 'job1' } }
+  const expectedQueueResponse = { status: 'ok', data: [] }
+
+  const listenResponse1 = await listen(dispatch1, connection1)
+  const listenResponse2 = await listen(dispatch2, connection2)
+
+  const processFn = processStub.args[1][2] // Get the internal job handler
+  const processResponse = await processFn({
+    data: action,
+    id: 'job1',
+    name: 'ns2',
+  }) // Call internal handler to make sure it calls ns2 dispatch
+
+  t.deepEqual(listenResponse1, expected)
+  t.deepEqual(listenResponse2, expected)
+  t.is(dispatch1.callCount, 0)
+  t.is(dispatch2.callCount, 1)
+  t.deepEqual(dispatch2.args[0][0], expectedAction)
+  t.is(processStub.callCount, 2)
+  t.is(processStub.args[0][0], 'ns1') // Namespace
+  t.is(processStub.args[0][1], 1) // Default max concurrency
+  t.is(processStub.args[1][0], 'ns2') // Namespace
+  t.is(processStub.args[1][1], 1) // Default max concurrency
   t.deepEqual(processResponse, expectedQueueResponse)
 })
 

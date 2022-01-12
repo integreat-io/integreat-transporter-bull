@@ -47,6 +47,7 @@ export default async function (
   {
     redis,
     namespace = 'great',
+    subNamespace,
     queue: queueFromOptions,
     keyPrefix,
     bullSettings,
@@ -95,6 +96,7 @@ export default async function (
     status: 'ok',
     queue,
     namespace,
+    subNamespace,
     maxConcurrency,
     wrapSourceService,
     defaultIdentId,

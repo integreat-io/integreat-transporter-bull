@@ -1,4 +1,4 @@
-import { Queue, AdvancedSettings } from 'bull'
+import { JobId, Queue, AdvancedSettings } from 'bull'
 
 export interface RedisOptions {
   port?: number
@@ -30,6 +30,7 @@ export interface RedisOptions {
 export interface EndpointOptions extends Record<string, unknown> {
   queue?: Queue
   namespace?: string
+  subNamespace?: string
   maxConcurrency?: number
   redis?: string | RedisOptions
   keyPrefix?: string
@@ -115,6 +116,7 @@ export interface Connection extends Record<string, unknown> {
   status: string
   queue?: Queue
   namespace?: string
+  subNamespace?: string
   maxConcurrency?: number
   wrapSourceService?: string
   defaultIdentId?: string
@@ -142,4 +144,10 @@ export interface Transporter {
     connection: Connection | null
   ) => Promise<Response>
   disconnect: (connection: Connection | null) => Promise<void>
+}
+
+export interface JobData {
+  id: JobId
+  timestamp: number
+  namespace: string
 }
