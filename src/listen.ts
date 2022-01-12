@@ -96,13 +96,16 @@ export default async function listen(
         maxConcurrency,
         handler(dispatch, wrapSourceService, defaultIdentId)
       )
+      debugLog(
+        `Listening to queue '${namespace}' for sub namespace '${subNamespace}'`
+      )
     } else {
       queue.process(
         maxConcurrency,
         handler(dispatch, wrapSourceService, defaultIdentId)
       )
+      debugLog(`Listening to queue '${namespace}'`)
     }
-    debugLog(`Listening to queue '${namespace}'`)
 
     return { status: 'ok' }
   } catch (error) {
