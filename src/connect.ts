@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-object-injection */
 import Bull = require('bull')
 import debug = require('debug')
 import { isObject } from './utils/is'
@@ -9,6 +10,8 @@ import {
 } from './types'
 
 const debugLog = debug('integreat:transporter:bull')
+
+const queues: Record<string, Bull.Queue> = {}
 
 function redisOptionsWithAuth(
   redis?: RedisOptions | string | null,
@@ -69,9 +72,13 @@ export default async function (
   }
 
   const queue =
+    queues[namespace] ??
     queueFromOptions ??
     createQueue(namespace, redis, authentication, keyPrefix, bullSettings)
   debugLog(`Created bull queue '${namespace}'`)
+
+  // Cache queue for reuse
+  queues[namespace] = queue
 
   if (waitForReady) {
     try {
