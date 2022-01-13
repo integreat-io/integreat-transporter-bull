@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-object-injection */
 import { Job } from 'bull'
 import debug = require('debug')
 import { isObject, isAction } from './utils/is'
@@ -11,9 +12,12 @@ export interface DispatchWithProgress<T = unknown> {
   (action: Action | null): PromiseWithProgress<Response<T>>
 }
 
-const debugLog = debug('integreat:transporter:bull')
+type Dispatches = Record<string, Record<string, DispatchWithProgress>>
 
+const debugLog = debug('integreat:transporter:bull')
 const OK_STATUSES = ['ok', 'noaction', 'queued']
+
+const dispatches: Dispatches = {}
 
 const wrapJobInAction = (
   job: unknown,
@@ -33,17 +37,42 @@ const setJobIdWhenNoActionId = (action: Action, id?: string | number) =>
         meta: { ...action.meta, id: String(id) },
       }
 
+function resolveDispatch(
+  dispatch: DispatchWithProgress | null,
+  namespace: string,
+  subNamespace?: string
+) {
+  if (typeof dispatch === 'function') {
+    return dispatch
+  } else if (subNamespace && dispatches[namespace]) {
+    return dispatches[namespace][subNamespace]
+  } else {
+    return null
+  }
+}
+
 const handler = (
-  dispatch: DispatchWithProgress,
+  dispatch: DispatchWithProgress | null,
+  namespace: string,
   wrapSourceService: string,
   defaultIdentId?: string
 ) =>
   async function processJob(job: Job) {
-    const shouldWrapJob = !isAction(job.data)
+    const { data, name, id } = job
+
+    const dispatchFn = resolveDispatch(dispatch, namespace, name)
+    if (typeof dispatchFn !== 'function') {
+      debugLog('Could not handle action from queue. dispatch is not a function')
+      throw new Error(
+        'Could not handle action from queue. dispatch is not a function'
+      )
+    }
+
+    const shouldWrapJob = !isAction(data)
     const action = shouldWrapJob
-      ? wrapJobInAction(job.data, wrapSourceService, defaultIdentId)
-      : job.data
-    const dispatchPromise = dispatch(setJobIdWhenNoActionId(action, job.id))
+      ? wrapJobInAction(data, wrapSourceService, defaultIdentId)
+      : data
+    const dispatchPromise = dispatchFn(setJobIdWhenNoActionId(action, id))
 
     // Report function if dispatch support onProgress
     if (typeof dispatchPromise.onProgress === 'function') {
@@ -71,6 +100,9 @@ const handler = (
     }
   }
 
+const isFirstListenForNamespace = (dispatches: Dispatches, namespace: string) =>
+  !dispatches[namespace]
+
 export default async function listen(
   dispatch: DispatchWithProgress,
   connection: Connection | null
@@ -80,7 +112,7 @@ export default async function listen(
     maxConcurrency = 1,
     wrapSourceService = 'bull',
     defaultIdentId,
-    namespace,
+    namespace = 'great',
     subNamespace,
   } = connection || {}
   if (!queue) {
@@ -91,18 +123,28 @@ export default async function listen(
   try {
     // Start listening to queue
     if (subNamespace) {
-      queue.process(
-        subNamespace,
-        maxConcurrency,
-        handler(dispatch, wrapSourceService, defaultIdentId)
-      )
+      // We have a sub namespace – let's store all dispatches and have a catch-all listener
+
+      if (isFirstListenForNamespace(dispatches, namespace)) {
+        // Set up listener and create object for storing dispatches
+        queue.process(
+          '*',
+          maxConcurrency,
+          handler(null, namespace, wrapSourceService, defaultIdentId)
+        )
+        dispatches[namespace] = {}
+      }
+
+      dispatches[namespace][subNamespace] = dispatch
+
       debugLog(
         `Listening to queue '${namespace}' for sub namespace '${subNamespace}'`
       )
     } else {
+      // Normal setup with on queue per namespace
       queue.process(
         maxConcurrency,
-        handler(dispatch, wrapSourceService, defaultIdentId)
+        handler(dispatch, namespace, wrapSourceService, defaultIdentId)
       )
       debugLog(`Listening to queue '${namespace}'`)
     }

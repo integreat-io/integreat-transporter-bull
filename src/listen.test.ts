@@ -59,24 +59,22 @@ test('should listen to sub namespace', async (t) => {
   const listenResponse1 = await listen(dispatch1, connection1)
   const listenResponse2 = await listen(dispatch2, connection2)
 
-  const processFn = processStub.args[1][2] // Get the internal job handler
+  const processFn = processStub.args[0][2] // Get the internal job handler
   const processResponse = await processFn({
     data: action,
     id: 'job1',
     name: 'ns2',
   }) // Call internal handler to make sure it calls ns2 dispatch
 
-  t.deepEqual(listenResponse1, expected)
-  t.deepEqual(listenResponse2, expected)
+  t.is(processStub.callCount, 1)
+  t.is(processStub.args[0][0], '*') // Catch-all namespace
+  t.is(processStub.args[0][1], 1) // Default max concurrency
   t.is(dispatch1.callCount, 0)
   t.is(dispatch2.callCount, 1)
   t.deepEqual(dispatch2.args[0][0], expectedAction)
-  t.is(processStub.callCount, 2)
-  t.is(processStub.args[0][0], 'ns1') // Namespace
-  t.is(processStub.args[0][1], 1) // Default max concurrency
-  t.is(processStub.args[1][0], 'ns2') // Namespace
-  t.is(processStub.args[1][1], 1) // Default max concurrency
   t.deepEqual(processResponse, expectedQueueResponse)
+  t.deepEqual(listenResponse1, expected)
+  t.deepEqual(listenResponse2, expected)
 })
 
 test('should wrap non-action jobs in a REQUEST action and unwrap response', async (t) => {
