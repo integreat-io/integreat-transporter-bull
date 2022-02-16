@@ -72,6 +72,10 @@ const handler = (
     const action = shouldWrapJob
       ? wrapJobInAction(data, wrapSourceService, defaultIdentId)
       : data
+    debugLog('Dispatching action')
+    debug('integreat:transporter:bull:action')(
+      `Dispatching action ${JSON.stringify(action)}`
+    )
     const dispatchPromise = dispatchFn(setJobIdWhenNoActionId(action, id))
 
     // Report function if dispatch support onProgress
@@ -88,6 +92,10 @@ const handler = (
       })
     }
     const response = await dispatchPromise
+    debugLog('Received response')
+    debug('integreat:transporter:bull:action')(
+      `Received response ${JSON.stringify(response)}`
+    )
 
     if (isObject(response) && typeof response.status === 'string') {
       if (OK_STATUSES.includes(response.status)) {
