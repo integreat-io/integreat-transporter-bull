@@ -65,8 +65,6 @@ export interface Payload<T = unknown> extends Record<string, unknown> {
   endpoint?: string
   params?: Params
   uri?: string
-  method?: string
-  headers?: Record<string, string>
   page?: number
   pageOffset?: number
   pageSize?: number
