@@ -1,6 +1,6 @@
 {
   "name": "integreat-transporter-bull",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "Bull Queue Transporter for Integreat",
   "author": "Kjell-Morten Bratsberg Thorsen <kjellmorten@integreat.io>",
   "license": "ISC",
@@ -28,14 +28,14 @@
     "node": ">= 14"
   },
   "dependencies": {
-    "@types/bull": "^3.15.7",
+    "@types/bull": "^3.15.8",
     "@types/debug": "^4.1.7",
     "bull": "^3.29.3",
-    "debug": "^4.3.3"
+    "debug": "^4.3.4"
   },
   "devDependencies": {
     "@integreat/ts-dev-setup": "^2.2.0",
-    "@types/sinon": "^10.0.6",
+    "@types/sinon": "^10.0.11",
     "sinon": "^12.0.1"
   }
 }
