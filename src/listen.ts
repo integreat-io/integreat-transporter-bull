@@ -21,12 +21,17 @@ const dispatches: Dispatches = {}
 
 const wrapJobInAction = (
   job: unknown,
-  wrapSourceService: string,
+  sourceService: string,
   defaultIdentId?: string
 ) => ({
   type: 'REQUEST',
-  payload: { data: job, sourceService: wrapSourceService },
+  payload: { data: job, sourceService },
   meta: defaultIdentId ? { ident: { id: defaultIdentId } } : {},
+})
+
+const setSourceService = (action: Action, sourceService?: string) => ({
+  ...action,
+  payload: { ...action.payload, sourceService },
 })
 
 const setJobIdWhenNoActionId = (action: Action, id?: string | number) =>
@@ -54,7 +59,7 @@ function resolveDispatch(
 const handler = (
   dispatch: DispatchWithProgress | null,
   namespace: string,
-  wrapSourceService: string,
+  sourceService: string,
   defaultIdentId?: string
 ) =>
   async function processJob(job: Job) {
@@ -70,8 +75,8 @@ const handler = (
 
     const shouldWrapJob = !isAction(data)
     const action = shouldWrapJob
-      ? wrapJobInAction(data, wrapSourceService, defaultIdentId)
-      : data
+      ? wrapJobInAction(data, sourceService, defaultIdentId)
+      : setSourceService(data, sourceService)
     debugLog('Dispatching action')
     debug('integreat:transporter:bull:action')(
       `Dispatching action ${JSON.stringify(action)}`

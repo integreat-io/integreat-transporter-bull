@@ -21,7 +21,11 @@ test('should listen to queue and dispatch action', async (t) => {
   const connection = { status: 'ok', queue, namespace: 'great' }
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
   const expected = { status: 'ok' }
-  const expectedAction = { ...action, meta: { id: 'job1' } }
+  const expectedAction = {
+    ...action,
+    payload: { ...action.payload, sourceService: 'bull' },
+    meta: { id: 'job1' },
+  }
   const expectedQueueResponse = { status: 'ok', data: [] }
 
   const listenResponse = await listen(dispatch, connection)
@@ -53,7 +57,11 @@ test('should listen to sub namespace', async (t) => {
   const dispatch1 = sinon.stub().resolves({ status: 'ok', data: [] })
   const dispatch2 = sinon.stub().resolves({ status: 'ok', data: [] })
   const expected = { status: 'ok' }
-  const expectedAction = { ...action, meta: { id: 'job1' } }
+  const expectedAction = {
+    ...action,
+    payload: { ...action.payload, sourceService: 'bull' },
+    meta: { id: 'job1' },
+  }
   const expectedQueueResponse = { status: 'ok', data: [] }
 
   const listenResponse1 = await listen(dispatch1, connection1)
@@ -167,7 +175,11 @@ test('should not override action id', async (t) => {
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, namespace: 'great' }
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
-  const actionWithId = { ...action, meta: { id: 'action1' } }
+  const actionWithId = {
+    ...action,
+    payload: { ...action.payload, sourceService: 'bull' },
+    meta: { id: 'action1' },
+  }
   const expected = { status: 'ok' }
 
   const ret = await listen(dispatch, connection)
@@ -190,7 +202,7 @@ test('should not set action id when job is missing id', async (t) => {
   await processFn({ data: action }) // Call internal handler to make sure it calls dispatch
 
   t.deepEqual(ret, expected)
-  t.deepEqual(dispatch.args[0][0], action)
+  t.deepEqual(dispatch.args[0][0].meta, action.meta)
 })
 
 test('should update job progress when handler function support it', async (t) => {
@@ -208,7 +220,11 @@ test('should update job progress when handler function support it', async (t) =>
     return Object.assign(p, { onProgress: onProgressStub })
   })
   const expected = { status: 'ok' }
-  const expectedAction = { ...action, meta: { id: 'job1' } }
+  const expectedAction = {
+    ...action,
+    payload: { ...action.payload, sourceService: 'bull' },
+    meta: { id: 'job1' },
+  }
   const expectedQueueResponse = { status: 'ok', data: [] }
   const bullJob = { data: action, id: 'job1', progress: progressStub }
 
