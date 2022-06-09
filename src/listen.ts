@@ -1,6 +1,6 @@
 /* eslint-disable security/detect-object-injection */
 import { Job } from 'bull'
-import debug = require('debug')
+import * as debug from 'debug'
 import { isObject, isAction } from './utils/is'
 import { Connection, Response, Action } from './types'
 

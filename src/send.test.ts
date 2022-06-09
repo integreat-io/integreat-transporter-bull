@@ -1,4 +1,4 @@
-import ava, { TestInterface } from 'ava'
+import ava, { TestFn } from 'ava'
 import sinon = require('sinon')
 import Bull = require('bull')
 import connect from './connect'
@@ -7,7 +7,7 @@ import send from './send'
 
 // Setup
 
-const test = ava as TestInterface<{ queue: Bull.Queue; namespace: string }>
+const test = ava as TestFn<{ queue: Bull.Queue; namespace: string }>
 
 let namespaceCount = 1
 const nextNamespace = () => 'send' + namespaceCount++

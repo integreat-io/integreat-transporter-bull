@@ -1,4 +1,4 @@
-import debug = require('debug')
+import * as debug from 'debug'
 import { Job, JobOptions, Queue } from 'bull'
 import { Action, Response, Connection, JobData } from './types'
 

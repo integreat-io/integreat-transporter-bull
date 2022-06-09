@@ -1,6 +1,6 @@
 import test from 'ava'
 import { Queue } from 'bull'
-import sinon = require('sinon')
+import * as sinon from 'sinon'
 
 import listen from './listen'
 
@@ -257,7 +257,7 @@ test('should reject when action response is error', async (t) => {
   const processFn = processStub.args[0][1] // Get the internal job handler
   const err = await t.throwsAsync(processFn({ data: action })) // Call internal handler to make sure it calls dispatch
 
-  t.is(err.message, '[notfound] Where?')
+  t.is(err?.message, '[notfound] Where?')
   t.deepEqual(ret, expected)
 })
 
@@ -302,7 +302,7 @@ test('should reject when response is not a valid response', async (t) => {
   const processFn = processStub.args[0][1] // Get the internal job handler
   const err = await t.throwsAsync(processFn({ data: action })) // Call internal handler to make sure it calls dispatch
 
-  t.is(err.message, 'Queued action did not return a valid response')
+  t.is(err?.message, 'Queued action did not return a valid response')
   t.deepEqual(ret, expected)
 })
 
