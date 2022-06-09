@@ -31,11 +31,13 @@ const action = {
   meta: {},
 }
 
+const emit = () => undefined
+
 // Tests -- action
 
 test('should send job with action and return status and data', async (t) => {
   const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null)
+  const connection = await connect({ queue, namespace }, null, null, emit)
 
   const ret = await send(action, connection)
 
@@ -56,7 +58,8 @@ test('should send job to queue with sub namespace', async (t) => {
   const connection = await connect(
     { queue, namespace: namespace, subNamespace: `${namespace}_sub` },
     null,
-    null
+    null,
+    emit
   )
 
   const ret = await send(action, connection)
@@ -75,7 +78,7 @@ test('should send job to queue with sub namespace', async (t) => {
 
 test('should use action id as job id', async (t) => {
   const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null)
+  const connection = await connect({ queue, namespace }, null, null, emit)
   const action = {
     type: 'SET',
     payload: { type: 'entry', data: { id: 'ent1', title: 'Entry 1' } },
@@ -120,7 +123,7 @@ test('should return error when no connection', async (t) => {
 
 test('should clean waiting jobs with SERVICE action', async (t) => {
   const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null)
+  const connection = await connect({ queue, namespace }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanWaiting' },
@@ -138,7 +141,7 @@ test('should clean waiting jobs with SERVICE action', async (t) => {
 
 test('should not clean waiting jobs newer than given ms with SERVICE action', async (t) => {
   const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null)
+  const connection = await connect({ queue, namespace }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanWaiting', olderThanMs: 7200000 },
@@ -156,7 +159,7 @@ test('should not clean waiting jobs newer than given ms with SERVICE action', as
 
 test('should clean scheduled jobs with SERVICE action', async (t) => {
   const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null)
+  const connection = await connect({ queue, namespace }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanScheduled' },
@@ -175,7 +178,7 @@ test('should clean scheduled jobs with SERVICE action', async (t) => {
 test('should clean completed jobs with SERVICE action', async (t) => {
   const { queue, namespace } = t.context
   const cleanSpy = sinon.spy(queue, 'clean')
-  const connection = await connect({ queue, namespace }, null, null)
+  const connection = await connect({ queue, namespace }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanCompleted' },
@@ -193,7 +196,7 @@ test('should clean completed jobs with SERVICE action', async (t) => {
 test('should clean completed jobs older than given ms with SERVICE action', async (t) => {
   const { queue, namespace } = t.context
   const cleanSpy = sinon.spy(queue, 'clean')
-  const connection = await connect({ queue, namespace }, null, null)
+  const connection = await connect({ queue, namespace }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanCompleted', olderThanMs: 3600000 },
@@ -210,7 +213,7 @@ test('should clean completed jobs older than given ms with SERVICE action', asyn
 
 test('should clean more job types with the same SERVICE action', async (t) => {
   const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null)
+  const connection = await connect({ queue, namespace }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: ['cleanWaiting', 'cleanScheduled'] },
@@ -232,7 +235,7 @@ test('should clean more job types with the same SERVICE action', async (t) => {
 test('should return error when cleaning fails', async (t) => {
   const { queue, namespace } = t.context
   sinon.stub(queue, 'clean').rejects(new Error('No queue!'))
-  const connection = await connect({ queue, namespace }, null, null)
+  const connection = await connect({ queue, namespace }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanCompleted' },

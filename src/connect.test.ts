@@ -1,5 +1,5 @@
 import test from 'ava'
-// import sinon = require('sinon')
+import sinon = require('sinon')
 import Bull = require('bull')
 import { Connection } from './types'
 
@@ -12,6 +12,15 @@ interface QueueWithInternals extends Bull.Queue {
   }
 }
 
+// Setup
+
+const emit = () => undefined
+
+const wait = (ms: number) =>
+  new Promise((resolve, _reject) => {
+    setInterval(resolve, ms)
+  })
+
 // Tests
 
 test('should connect to bull queue with redis url and default prefix', async (t) => {
@@ -21,7 +30,7 @@ test('should connect to bull queue with redis url and default prefix', async (t)
     waitForReady: false,
   }
 
-  const conn = await connect(options, null, null)
+  const conn = await connect(options, null, null, emit)
 
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
@@ -40,8 +49,8 @@ test('should reuse queue for same namespace', async (t) => {
     waitForReady: false,
   }
 
-  const conn1 = await connect(options, null, null)
-  const conn2 = await connect(options, null, null)
+  const conn1 = await connect(options, null, null, emit)
+  const conn2 = await connect(options, null, null, emit)
 
   t.truthy(conn1?.queue)
   t.is(conn1?.queue, conn2?.queue)
@@ -55,7 +64,7 @@ test('should connect to bull queue with sub namespace', async (t) => {
     waitForReady: false,
   }
 
-  const conn = await connect(options, null, null)
+  const conn = await connect(options, null, null, emit)
 
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
@@ -76,7 +85,7 @@ test('should connect to bull queue with specified prefix', async (t) => {
     waitForReady: false,
   }
 
-  const conn = await connect(options, null, null)
+  const conn = await connect(options, null, null, emit)
 
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
@@ -95,7 +104,7 @@ test('should connect to bull queue with redis options', async (t) => {
     waitForReady: false,
   }
 
-  const conn = await connect(options, null, null)
+  const conn = await connect(options, null, null, emit)
 
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
@@ -108,7 +117,7 @@ test('should connect to bull queue with redis options', async (t) => {
 test('should connect to bull queue without options', async (t) => {
   const options = { namespace: 'ns6', waitForReady: false }
 
-  const conn = await connect(options, null, null)
+  const conn = await connect(options, null, null, emit)
 
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
@@ -122,7 +131,7 @@ test('should use provided bull queue as is', async (t) => {
   const queue = new Bull('ns7_b') // Different namespace than options
   const options = { namespace: 'ns7', queue, waitForReady: false }
 
-  const conn = await connect(options, null, null)
+  const conn = await connect(options, null, null, emit)
 
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
@@ -133,7 +142,7 @@ test('should use provided bull queue as is', async (t) => {
 test('should use default namespace when none is provided', async (t) => {
   const options = { waitForReady: false }
 
-  const conn = await connect(options, null, null)
+  const conn = await connect(options, null, null, emit)
 
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
@@ -151,7 +160,7 @@ test('should pass on some options to connection object', async (t) => {
     defaultIdentId: 'queuer',
   }
 
-  const conn = await connect(options, null, null)
+  const conn = await connect(options, null, null, emit)
 
   t.is(conn?.status, 'ok')
   t.is(conn?.maxConcurrency, 5)
@@ -171,7 +180,7 @@ test('should pass on bull advanced settings object', async (t) => {
   }
   const authentication = { username: 'me', password: 's3cr3t' }
 
-  const conn = await connect(options, authentication, null)
+  const conn = await connect(options, authentication, null, emit)
 
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
@@ -187,7 +196,7 @@ test('should pass on auth object', async (t) => {
   }
   const authentication = { username: 'me', password: 's3cr3t' }
 
-  const conn = await connect(options, authentication, null)
+  const conn = await connect(options, authentication, null, emit)
 
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
@@ -202,8 +211,8 @@ test('should reuse connection if still connected', async (t) => {
   const options1 = { namespace: 'ns11', waitForReady: false }
   const options2 = { namespace: 'ns12', waitForReady: false }
 
-  const conn1 = await connect(options1, null, null)
-  const conn2 = await connect(options2, null, conn1)
+  const conn1 = await connect(options1, null, null, emit)
+  const conn2 = await connect(options2, null, conn1, emit)
 
   t.true(typeof conn2 === 'object' && conn2 !== null)
   t.is(conn2?.status, 'ok')
@@ -214,7 +223,7 @@ test('should create new connection when given one is closed', async (t) => {
   const options1 = { namespace: 'ns13', waitForReady: false }
   const options2 = { namespace: 'ns14', waitForReady: false }
 
-  const conn1 = await connect(options1, null, null)
+  const conn1 = await connect(options1, null, null, emit)
   const conn1Closed = {
     ...conn1,
     queue: {
@@ -222,7 +231,7 @@ test('should create new connection when given one is closed', async (t) => {
       client: { ...conn1?.queue?.client, status: 'end' },
     },
   } as Connection
-  const conn2 = await connect(options2, null, conn1Closed)
+  const conn2 = await connect(options2, null, conn1Closed, emit)
 
   t.true(typeof conn2 === 'object' && conn2 !== null)
   t.is(conn2?.status, 'ok')
@@ -233,27 +242,26 @@ test('should create new connection if given one has an error', async (t) => {
   const options = { namespace: 'ns15', waitForReady: false }
   const connection = { status: 'error', error: 'What happened?' }
 
-  const conn = await connect(options, null, connection)
+  const conn = await connect(options, null, connection, emit)
 
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
   t.is(conn?.namespace, 'ns15')
 })
 
-test('should return with an error when connection cannot be made', async (t) => {
+test('should emit error from bull', async (t) => {
+  const emit = sinon.stub()
   const options = {
     namespace: 'ns16',
-    redis: 'redis://unknown.test:9999',
+    redis: 'http://unknown.test:9999',
+    waitForReady: false,
   }
 
-  const conn = await connect(options, null, null)
+  await connect(options, null, null, emit)
+  await wait(500)
 
-  t.true(typeof conn === 'object' && conn !== null)
-  t.is(conn?.status, 'error')
-  t.is(
-    conn?.error,
-    'Connection to Redis failed: getaddrinfo ENOTFOUND unknown.test'
-  )
-  t.is(conn?.namespace, 'ns16')
-  t.falsy(conn?.queue)
+  t.true(emit.callCount > 0)
+  t.is(emit.args[1][0], 'error')
+  const err = emit.args[1][1] as Error
+  t.deepEqual(err.message, 'Bull error: getaddrinfo ENOTFOUND unknown.test')
 })

@@ -36,6 +36,8 @@ function createQueue(
     redis: redisOptionsWithAuth(redis, authentication),
     prefix,
     settings,
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
   }
   return typeof redis === 'string'
     ? new Bull(namespace, redis, options)
@@ -60,7 +62,8 @@ export default async function (
     waitForReady = true,
   }: EndpointOptions,
   authentication: Authentication | null,
-  connection: Connection | null
+  connection: Connection | null,
+  emit: (eventType: string, ...args: unknown[]) => void
 ): Promise<Connection | null> {
   if (
     isObject(connection) &&
@@ -79,6 +82,10 @@ export default async function (
 
   // Cache queue for reuse
   queues[namespace] = queue
+
+  queue.on('error', (error) =>
+    emit('error', new Error(`Bull error: ${error.message}`))
+  )
 
   if (waitForReady) {
     try {
