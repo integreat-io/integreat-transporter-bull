@@ -76,6 +76,39 @@ test('should send job to queue with sub namespace', async (t) => {
   t.deepEqual(ret.data, expectedData)
 })
 
+test('should send job to queue with sub namespace from action meta', async (t) => {
+  const { queue, namespace } = t.context
+  const connection = await connect(
+    { queue, namespace: namespace },
+    null,
+    null,
+    emit
+  )
+  const action = {
+    type: 'SET',
+    payload: {
+      type: 'entry',
+      data: { id: 'ent1', title: 'Entry 1' },
+    },
+    meta: {
+      subQueue: `${namespace}_sub`,
+    },
+  }
+
+  const ret = await send(action, connection)
+
+  t.is(ret.status, 'ok', ret.error)
+  const jobs = await queue.getWaiting()
+  t.is(jobs.length, 1)
+  t.deepEqual(jobs[0].data, action)
+  const expectedData = {
+    id: jobs[0].id,
+    timestamp: jobs[0].timestamp,
+    namespace: `${namespace}_sub`,
+  }
+  t.deepEqual(ret.data, expectedData)
+})
+
 test('should use action id as job id', async (t) => {
   const { queue, namespace } = t.context
   const connection = await connect({ queue, namespace }, null, null, emit)
