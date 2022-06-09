@@ -27,7 +27,6 @@ test('should connect to bull queue with redis url and default prefix', async (t)
   const options = {
     namespace: 'ns1',
     redis: 'redis://redis1.test:6380',
-    waitForReady: false,
   }
 
   const conn = await connect(options, null, null, emit)
@@ -46,7 +45,6 @@ test('should reuse queue for same namespace', async (t) => {
   const options = {
     namespace: 'ns2',
     redis: 'redis://redis2.test:6380',
-    waitForReady: false,
   }
 
   const conn1 = await connect(options, null, null, emit)
@@ -61,7 +59,6 @@ test('should connect to bull queue with sub namespace', async (t) => {
     namespace: 'ns3',
     subNamespace: 'sub1',
     redis: 'redis://redis3.test:6380',
-    waitForReady: false,
   }
 
   const conn = await connect(options, null, null, emit)
@@ -82,7 +79,6 @@ test('should connect to bull queue with specified prefix', async (t) => {
     namespace: 'ns4',
     redis: 'redis://redis4.test:6380',
     keyPrefix: 'something',
-    waitForReady: false,
   }
 
   const conn = await connect(options, null, null, emit)
@@ -100,8 +96,7 @@ test('should connect to bull queue with specified prefix', async (t) => {
 test('should connect to bull queue with redis options', async (t) => {
   const options = {
     namespace: 'ns5',
-    redis: { host: 'redis5.test', port: 6382, waitForReady: false },
-    waitForReady: false,
+    redis: { host: 'redis5.test', port: 6382 },
   }
 
   const conn = await connect(options, null, null, emit)
@@ -115,7 +110,7 @@ test('should connect to bull queue with redis options', async (t) => {
 })
 
 test('should connect to bull queue without options', async (t) => {
-  const options = { namespace: 'ns6', waitForReady: false }
+  const options = { namespace: 'ns6' }
 
   const conn = await connect(options, null, null, emit)
 
@@ -129,7 +124,7 @@ test('should connect to bull queue without options', async (t) => {
 
 test('should use provided bull queue as is', async (t) => {
   const queue = new Bull('ns7_b') // Different namespace than options
-  const options = { namespace: 'ns7', queue, waitForReady: false }
+  const options = { namespace: 'ns7', queue }
 
   const conn = await connect(options, null, null, emit)
 
@@ -140,7 +135,7 @@ test('should use provided bull queue as is', async (t) => {
 })
 
 test('should use default namespace when none is provided', async (t) => {
-  const options = { waitForReady: false }
+  const options = {}
 
   const conn = await connect(options, null, null, emit)
 
@@ -155,7 +150,6 @@ test('should pass on some options to connection object', async (t) => {
   const options = {
     namespace: 'ns8',
     maxConcurrency: 5,
-    waitForReady: false,
     wrapSourceService: 'queue',
     defaultIdentId: 'queuer',
   }
@@ -166,7 +160,6 @@ test('should pass on some options to connection object', async (t) => {
   t.is(conn?.maxConcurrency, 5)
   t.is(conn?.wrapSourceService, 'queue')
   t.is(conn?.defaultIdentId, 'queuer')
-  t.is(conn?.waitForReady, undefined)
 })
 
 test('should pass on bull advanced settings object', async (t) => {
@@ -176,7 +169,6 @@ test('should pass on bull advanced settings object', async (t) => {
     bullSettings: {
       lockDuration: 12345,
     },
-    waitForReady: false,
   }
   const authentication = { username: 'me', password: 's3cr3t' }
 
@@ -192,7 +184,6 @@ test('should pass on auth object', async (t) => {
   const options = {
     namespace: 'ns10',
     redis: 'redis://localhost:6378',
-    waitForReady: false,
   }
   const authentication = { username: 'me', password: 's3cr3t' }
 
@@ -208,8 +199,8 @@ test('should pass on auth object', async (t) => {
 })
 
 test('should reuse connection if still connected', async (t) => {
-  const options1 = { namespace: 'ns11', waitForReady: false }
-  const options2 = { namespace: 'ns12', waitForReady: false }
+  const options1 = { namespace: 'ns11' }
+  const options2 = { namespace: 'ns12' }
 
   const conn1 = await connect(options1, null, null, emit)
   const conn2 = await connect(options2, null, conn1, emit)
@@ -220,8 +211,8 @@ test('should reuse connection if still connected', async (t) => {
 })
 
 test('should create new connection when given one is closed', async (t) => {
-  const options1 = { namespace: 'ns13', waitForReady: false }
-  const options2 = { namespace: 'ns14', waitForReady: false }
+  const options1 = { namespace: 'ns13' }
+  const options2 = { namespace: 'ns14' }
 
   const conn1 = await connect(options1, null, null, emit)
   const conn1Closed = {
@@ -239,7 +230,7 @@ test('should create new connection when given one is closed', async (t) => {
 })
 
 test('should create new connection if given one has an error', async (t) => {
-  const options = { namespace: 'ns15', waitForReady: false }
+  const options = { namespace: 'ns15' }
   const connection = { status: 'error', error: 'What happened?' }
 
   const conn = await connect(options, null, connection, emit)
@@ -254,7 +245,6 @@ test('should emit error from bull', async (t) => {
   const options = {
     namespace: 'ns16',
     redis: 'http://unknown.test:9999',
-    waitForReady: false,
   }
 
   await connect(options, null, null, emit)

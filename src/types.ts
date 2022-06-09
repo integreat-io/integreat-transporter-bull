@@ -37,7 +37,6 @@ export interface EndpointOptions extends Record<string, unknown> {
   bullSettings?: AdvancedSettings
   wrapSourceService?: string
   defaultIdentId?: string
-  waitForReady?: boolean
 }
 
 export interface Ident {
