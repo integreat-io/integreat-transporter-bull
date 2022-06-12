@@ -16,6 +16,8 @@ const bullTransporter: Transporter = {
 
   send,
 
+  shouldListen: (options) => options.dontListen !== true,
+
   listen,
 
   disconnect,

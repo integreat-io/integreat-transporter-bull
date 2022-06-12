@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import test from 'ava'
 
 import transporter from '.'
@@ -21,12 +22,49 @@ test('should have authentication string', (t) => {
 
 test('should return options object as is', (t) => {
   const options = {
-    uri: 'http://example.com/',
-    topic: 'test/message',
+    namespace: 'ns1',
+    redis: 'redis://redis1.test:6380',
   }
-  const serviceId = 'mqttStream'
+  const serviceId = 'queue'
 
   const ret = transporter.prepareOptions(options, serviceId)
 
   t.deepEqual(ret, options)
+})
+
+// Tests -- shouldListen
+
+test('should return true when options has no dontListen flag', (t) => {
+  const options = {
+    namespace: 'ns1',
+    redis: 'redis://redis1.test:6380',
+  }
+
+  const ret = transporter.shouldListen!(options)
+
+  t.true(ret)
+})
+
+test('should return false when dontListen flag is true', (t) => {
+  const options = {
+    namespace: 'ns1',
+    redis: 'redis://redis1.test:6380',
+    dontListen: true,
+  }
+
+  const ret = transporter.shouldListen!(options)
+
+  t.false(ret)
+})
+
+test('should return true when dontListen flag is false', (t) => {
+  const options = {
+    namespace: 'ns1',
+    redis: 'redis://redis1.test:6380',
+    dontListen: false,
+  }
+
+  const ret = transporter.shouldListen!(options)
+
+  t.true(ret)
 })

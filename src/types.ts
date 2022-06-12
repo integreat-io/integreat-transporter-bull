@@ -137,6 +137,7 @@ export interface Transporter {
     emit: (eventType: string, ...args: unknown[]) => void
   ) => Promise<Connection | null>
   send: (action: Action, connection: Connection | null) => Promise<Response>
+  shouldListen?: (options: EndpointOptions) => boolean
   listen?: (
     dispatch: Dispatch,
     connection: Connection | null
