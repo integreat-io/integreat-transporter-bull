@@ -38,17 +38,22 @@ async function runServiceAction(action: Action, queue: Queue) {
   return { status }
 }
 
+const removeSubQueue = ({
+  meta: { subQueue, ...meta } = {},
+  ...action
+}: Action) => ({ ...action, meta })
+
 async function push(
   queue: Queue,
   action: Action,
   options: JobOptions,
   subNamespace?: string
 ) {
-  const namespace = action.payload.subQueue || subNamespace
+  const namespace = action.meta?.subQueue || subNamespace
   if (typeof namespace === 'string') {
-    return await queue.add(namespace, action, options)
+    return await queue.add(namespace, removeSubQueue(action), options)
   } else {
-    return await queue.add(action, options)
+    return await queue.add(removeSubQueue(action), options)
   }
 }
 
