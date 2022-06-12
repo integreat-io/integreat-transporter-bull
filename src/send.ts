@@ -44,7 +44,7 @@ async function push(
   options: JobOptions,
   subNamespace?: string
 ) {
-  const namespace = action.meta?.subQueue || subNamespace
+  const namespace = action.payload.subQueue || subNamespace
   if (typeof namespace === 'string') {
     return await queue.add(namespace, action, options)
   } else {
