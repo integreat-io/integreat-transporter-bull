@@ -21,7 +21,7 @@ const dispatches: Dispatches = {}
 
 const wrapJobInAction = (
   job: unknown,
-  sourceService: string,
+  sourceService?: string,
   defaultIdentId?: string
 ) => ({
   type: 'REQUEST',
@@ -59,7 +59,7 @@ function resolveDispatch(
 const handler = (
   dispatch: DispatchWithProgress | null,
   namespace: string,
-  sourceService: string,
+  sourceService?: string,
   defaultIdentId?: string
 ) =>
   async function processJob(job: Job) {
@@ -123,7 +123,7 @@ export default async function listen(
   const {
     queue,
     maxConcurrency = 1,
-    wrapSourceService = 'bull',
+    wrapSourceService,
     defaultIdentId,
     namespace = 'great',
     subNamespace,

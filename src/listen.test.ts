@@ -23,7 +23,7 @@ test('should listen to queue and dispatch action', async (t) => {
   const expected = { status: 'ok' }
   const expectedAction = {
     ...action,
-    payload: { ...action.payload, sourceService: 'bull' },
+    payload: { ...action.payload, sourceService: undefined },
     meta: { id: 'job1' },
   }
   const expectedQueueResponse = { status: 'ok', data: [] }
@@ -59,7 +59,7 @@ test('should listen to sub namespace', async (t) => {
   const expected = { status: 'ok' }
   const expectedAction = {
     ...action,
-    payload: { ...action.payload, sourceService: 'bull' },
+    payload: { ...action.payload, sourceService: undefined },
     meta: { id: 'job1' },
   }
   const expectedQueueResponse = { status: 'ok', data: [] }
@@ -95,7 +95,7 @@ test('should wrap non-action jobs in a REQUEST action and unwrap response', asyn
   const job = { id: 'someJob' }
   const expectedAction = {
     type: 'REQUEST',
-    payload: { data: job, sourceService: 'bull' },
+    payload: { data: job, sourceService: undefined },
     meta: { id: 'job2' },
   }
   const expectedQueueResponse = { ok: true, context: {} }
@@ -155,7 +155,7 @@ test('should set ident from connection when wrapping in action', async (t) => {
   const job = { id: 'someJob' }
   const expectedAction = {
     type: 'REQUEST',
-    payload: { data: job, sourceService: 'bull' },
+    payload: { data: job, sourceService: undefined },
     meta: { id: 'job2', ident: { id: 'queuer' } },
   }
   const expectedQueueResponse = { ok: true, context: {} }
@@ -177,7 +177,7 @@ test('should not override action id', async (t) => {
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
   const actionWithId = {
     ...action,
-    payload: { ...action.payload, sourceService: 'bull' },
+    payload: { ...action.payload, sourceService: undefined },
     meta: { id: 'action1' },
   }
   const expected = { status: 'ok' }
@@ -222,7 +222,7 @@ test('should update job progress when handler function support it', async (t) =>
   const expected = { status: 'ok' }
   const expectedAction = {
     ...action,
-    payload: { ...action.payload, sourceService: 'bull' },
+    payload: { ...action.payload, sourceService: undefined },
     meta: { id: 'job1' },
   }
   const expectedQueueResponse = { status: 'ok', data: [] }
