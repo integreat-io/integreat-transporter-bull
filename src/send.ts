@@ -38,8 +38,8 @@ async function runServiceAction(action: Action, queue: Queue) {
   return { status }
 }
 
-const removeSubQueue = ({
-  meta: { subQueue, ...meta } = {},
+const removeMetaProps = ({
+  meta: { options, authorized, subQueue, ...meta } = {},
   ...action
 }: Action) => ({ ...action, meta })
 
@@ -51,9 +51,9 @@ async function push(
 ) {
   const namespace = action.meta?.subQueue || subNamespace
   if (typeof namespace === 'string') {
-    return await queue.add(namespace, removeSubQueue(action), options)
+    return await queue.add(namespace, removeMetaProps(action), options)
   } else {
-    return await queue.add(removeSubQueue(action), options)
+    return await queue.add(removeMetaProps(action), options)
   }
 }
 

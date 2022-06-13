@@ -28,7 +28,7 @@ test.afterEach.always(async (t) => {
 const action = {
   type: 'SET',
   payload: { type: 'entry', data: { id: 'ent1', title: 'Entry 1' } },
-  meta: {},
+  meta: { options: { secret: 'whaat!' }, authorized: true },
 }
 
 const emit = () => undefined
@@ -38,13 +38,17 @@ const emit = () => undefined
 test('should send job with action and return status and data', async (t) => {
   const { queue, namespace } = t.context
   const connection = await connect({ queue, namespace }, null, null, emit)
-
+  const expectedAction = {
+    type: 'SET',
+    payload: { type: 'entry', data: { id: 'ent1', title: 'Entry 1' } },
+    meta: {},
+  }
   const ret = await send(action, connection)
 
   t.is(ret.status, 'ok', ret.error)
   const jobs = await queue.getWaiting()
   t.is(jobs.length, 1)
-  t.deepEqual(jobs[0].data, action)
+  t.deepEqual(jobs[0].data, expectedAction)
   const expectedData = {
     id: jobs[0].id,
     timestamp: jobs[0].timestamp,
@@ -67,7 +71,8 @@ test('should send job to queue with sub namespace', async (t) => {
   t.is(ret.status, 'ok', ret.error)
   const jobs = await queue.getWaiting()
   t.is(jobs.length, 1)
-  t.deepEqual(jobs[0].data, action)
+  t.deepEqual(jobs[0].data.type, 'SET')
+  t.deepEqual(jobs[0].data.payload, action.payload)
   const expectedData = {
     id: jobs[0].id,
     timestamp: jobs[0].timestamp,
