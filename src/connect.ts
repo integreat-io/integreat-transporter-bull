@@ -73,18 +73,26 @@ export default async function (
     return connection
   }
 
-  const queue =
-    queues[namespace] ??
-    queueFromOptions ??
-    createQueue(namespace, redis, authentication, keyPrefix, bullSettings)
-  debugLog(`Created bull queue '${namespace}'`)
+  let queue = queues[namespace] ?? queueFromOptions
 
-  // Cache queue for reuse
-  queues[namespace] = queue
+  if (!queue) {
+    queue = createQueue(
+      namespace,
+      redis,
+      authentication,
+      keyPrefix,
+      bullSettings
+    )
+    debugLog(`Created bull queue '${namespace}'`)
 
-  queue.on('error', (error) =>
-    emit('error', new Error(`Bull error: ${error.message}`))
-  )
+    // Cache queue for reuse
+    queues[namespace] = queue
+
+    // Listen to errors from queue
+    queue.on('error', (error) =>
+      emit('error', new Error(`Bull error: ${error.message}`))
+    )
+  }
 
   return {
     status: 'ok',
