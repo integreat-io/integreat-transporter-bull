@@ -67,10 +67,14 @@ const handler = (
 
     const dispatchFn = resolveDispatch(dispatch, namespace, name)
     if (typeof dispatchFn !== 'function') {
-      debugLog('Could not handle action from queue. dispatch is not a function')
-      throw new Error(
-        'Could not handle action from queue. dispatch is not a function'
-      )
+      const errorReason =
+        !namespace || dispatches[namespace]
+          ? !namespace || !name || dispatches[namespace][name]
+            ? 'dispatch is not a function'
+            : `No queue named '${namespace}:${name}`
+          : `No queue named '${namespace}`
+      debugLog(`Could not handle action from queue. ${errorReason}`)
+      throw new Error(`Could not handle action from queue. ${errorReason}`)
     }
 
     const shouldWrapJob = !isAction(data)
