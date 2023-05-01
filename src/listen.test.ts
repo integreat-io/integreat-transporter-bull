@@ -21,10 +21,7 @@ test('should listen to queue and dispatch action', async (t) => {
   const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
   const expected = { status: 'ok' }
-  const expectedAction = {
-    ...action,
-    meta: { id: 'job1' },
-  }
+  const expectedAction = action
   const expectedQueueResponse = { status: 'ok', data: [] }
 
   const listenResponse = await listen(dispatch, connection)
@@ -56,10 +53,7 @@ test('should listen to subQueueId', async (t) => {
   const dispatch1 = sinon.stub().resolves({ status: 'ok', data: [] })
   const dispatch2 = sinon.stub().resolves({ status: 'ok', data: [] })
   const expected = { status: 'ok' }
-  const expectedAction = {
-    ...action,
-    meta: { id: 'job1' },
-  }
+  const expectedAction = action
   const expectedQueueResponse = { status: 'ok', data: [] }
 
   const listenResponse1 = await listen(dispatch1, connection1)
@@ -94,7 +88,6 @@ test('should wrap non-action jobs in a REQUEST action and unwrap response', asyn
   const expectedAction = {
     type: 'REQUEST',
     payload: { data: job },
-    meta: { id: 'job2' },
   }
   const expectedQueueResponse = { ok: true, context: {} }
 
@@ -157,10 +150,7 @@ test('should update job progress when handler function support it', async (t) =>
     return Object.assign(p, { onProgress: onProgressStub })
   })
   const expected = { status: 'ok' }
-  const expectedAction = {
-    ...action,
-    meta: { id: 'job1' },
-  }
+  const expectedAction = action
   const expectedQueueResponse = { status: 'ok', data: [] }
   const bullJob = { data: action, id: 'job1', progress: progressStub }
 

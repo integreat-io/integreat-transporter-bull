@@ -25,14 +25,6 @@ const wrapJobInAction = (job: unknown) => ({
   payload: { data: job },
 })
 
-const setJobIdWhenNoActionId = (action: Action, id?: string | number) =>
-  action.meta?.id || !id
-    ? action
-    : {
-        ...action,
-        meta: { ...action.meta, id: String(id) },
-      }
-
 function resolveDispatch(
   dispatch: DispatchWithProgress | null,
   queueId: string,
@@ -49,7 +41,7 @@ function resolveDispatch(
 
 const handler = (dispatch: DispatchWithProgress | null, queueId: string) =>
   async function processJob(job: Job) {
-    const { data, name, id } = job
+    const { data, name } = job
 
     const dispatchFn = resolveDispatch(dispatch, queueId, name)
     if (typeof dispatchFn !== 'function') {
@@ -66,7 +58,7 @@ const handler = (dispatch: DispatchWithProgress | null, queueId: string) =>
     const shouldWrapJob = !isAction(data)
     const action = shouldWrapJob ? wrapJobInAction(data) : data
     debugLog('Dispatching action')
-    const dispatchPromise = dispatchFn(setJobIdWhenNoActionId(action, id))
+    const dispatchPromise = dispatchFn(action)
 
     // Report function if dispatch support onProgress
     if (typeof dispatchPromise.onProgress === 'function') {
