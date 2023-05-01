@@ -3,6 +3,7 @@
 This implementation is based on [Bull](https://github.com/OptimalBits/bull).
 
 [![npm Version](https://img.shields.io/npm/v/integreat-transporter-bull.svg)](https://www.npmjs.com/package/integreat-transporter-bull)
+[![Maintainability](https://api.codeclimate.com/v1/badges/1d4b81103596d082db28/maintainability)](https://codeclimate.com/github/integreat-io/integreat-transporter-bull/maintainability)
 
 ## Getting started
 
