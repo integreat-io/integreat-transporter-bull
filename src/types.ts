@@ -1,7 +1,4 @@
-import {
-  Authentication as AuthenticationBase,
-  Connection as ConnectionBase,
-} from 'integreat'
+import { Connection as ConnectionBase } from 'integreat'
 import type { JobId, Queue, AdvancedSettings } from 'bull'
 
 export interface RedisOptions {
@@ -48,7 +45,7 @@ export interface Connection extends ConnectionBase {
   maxConcurrency?: number
 }
 
-export interface Authentication extends AuthenticationBase {
+export interface Authentication extends Record<string, unknown> {
   key?: string
   secret?: string
 }

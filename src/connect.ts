@@ -58,7 +58,7 @@ export default async function (
     bullSettings,
     maxConcurrency,
   }: EndpointOptions,
-  authentication: Authentication | null,
+  authentication: Record<string, unknown> | null,
   connection: Connection | null,
   emit: (eventType: string, ...args: unknown[]) => void
 ): Promise<Connection | null> {
