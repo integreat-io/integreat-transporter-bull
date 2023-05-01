@@ -149,17 +149,16 @@ test('should use default namespace when none is provided', async (t) => {
 test('should pass on some options to connection object', async (t) => {
   const options = {
     namespace: 'ns8',
+    subNamespace: 'internal',
     maxConcurrency: 5,
-    wrapSourceService: 'queue',
-    defaultIdentId: 'queuer',
   }
 
   const conn = await connect(options, null, null, emit)
 
   t.is(conn?.status, 'ok')
+  t.is(conn?.namespace, 'ns8')
+  t.is(conn?.subNamespace, 'internal')
   t.is(conn?.maxConcurrency, 5)
-  t.is(conn?.wrapSourceService, 'queue')
-  t.is(conn?.defaultIdentId, 'queuer')
 })
 
 test('should pass on bull advanced settings object', async (t) => {
@@ -170,7 +169,11 @@ test('should pass on bull advanced settings object', async (t) => {
       lockDuration: 12345,
     },
   }
-  const authentication = { username: 'me', password: 's3cr3t' }
+  const authentication = {
+    status: 'granted',
+    username: 'me',
+    password: 's3cr3t',
+  }
 
   const conn = await connect(options, authentication, null, emit)
 
@@ -185,7 +188,11 @@ test('should pass on auth object', async (t) => {
     namespace: 'ns10',
     redis: 'redis://localhost:6378',
   }
-  const authentication = { username: 'me', password: 's3cr3t' }
+  const authentication = {
+    status: 'granted',
+    username: 'me',
+    password: 's3cr3t',
+  }
 
   const conn = await connect(options, authentication, null, emit)
 

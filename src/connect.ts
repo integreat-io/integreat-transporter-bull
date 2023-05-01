@@ -57,8 +57,6 @@ export default async function (
     keyPrefix,
     bullSettings,
     maxConcurrency,
-    wrapSourceService,
-    defaultIdentId,
   }: EndpointOptions,
   authentication: Authentication | null,
   connection: Connection | null,
@@ -100,7 +98,5 @@ export default async function (
     namespace,
     subNamespace,
     maxConcurrency,
-    wrapSourceService,
-    defaultIdentId,
   }
 }

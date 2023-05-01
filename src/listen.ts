@@ -20,19 +20,9 @@ const OK_STATUSES = ['ok', 'noaction', 'queued']
 
 const dispatches: Dispatches = {}
 
-const wrapJobInAction = (
-  job: unknown,
-  sourceService?: string,
-  defaultIdentId?: string
-) => ({
+const wrapJobInAction = (job: unknown) => ({
   type: 'REQUEST',
-  payload: { data: job, sourceService },
-  meta: defaultIdentId ? { ident: { id: defaultIdentId } } : {},
-})
-
-const setSourceService = (action: Action, sourceService?: string) => ({
-  ...action,
-  payload: { ...action.payload, sourceService },
+  payload: { data: job },
 })
 
 const setJobIdWhenNoActionId = (action: Action, id?: string | number) =>
@@ -57,12 +47,7 @@ function resolveDispatch(
   }
 }
 
-const handler = (
-  dispatch: DispatchWithProgress | null,
-  namespace: string,
-  sourceService?: string,
-  defaultIdentId?: string
-) =>
+const handler = (dispatch: DispatchWithProgress | null, namespace: string) =>
   async function processJob(job: Job) {
     const { data, name, id } = job
 
@@ -79,9 +64,7 @@ const handler = (
     }
 
     const shouldWrapJob = !isAction(data)
-    const action = shouldWrapJob
-      ? wrapJobInAction(data, sourceService, defaultIdentId)
-      : setSourceService(data, sourceService)
+    const action = shouldWrapJob ? wrapJobInAction(data) : data
     debugLog('Dispatching action')
     debug('integreat:transporter:bull:action')(
       `Dispatching action ${JSON.stringify(action)}`
@@ -128,8 +111,6 @@ export default async function listen(
   const {
     queue,
     maxConcurrency = 1,
-    wrapSourceService,
-    defaultIdentId,
     namespace = 'great',
     subNamespace,
   } = connection || {}
@@ -145,11 +126,7 @@ export default async function listen(
 
       if (isFirstListenForNamespace(dispatches, namespace)) {
         // Set up listener and create object for storing dispatches
-        queue.process(
-          '*',
-          maxConcurrency,
-          handler(null, namespace, wrapSourceService, defaultIdentId)
-        )
+        queue.process('*', maxConcurrency, handler(null, namespace))
         dispatches[namespace] = {}
       }
 
@@ -160,10 +137,7 @@ export default async function listen(
       )
     } else {
       // Normal setup with on queue per namespace
-      queue.process(
-        maxConcurrency,
-        handler(dispatch, namespace, wrapSourceService, defaultIdentId)
-      )
+      queue.process(maxConcurrency, handler(dispatch, namespace))
       debugLog(`Listening to queue '${namespace}'`)
     }
 

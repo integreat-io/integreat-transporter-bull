@@ -39,8 +39,6 @@ export interface EndpointOptions extends Record<string, unknown> {
   redis?: string | RedisOptions
   keyPrefix?: string
   bullSettings?: AdvancedSettings
-  wrapSourceService?: string
-  defaultIdentId?: string
 }
 
 export interface Connection extends ConnectionBase {
@@ -48,8 +46,6 @@ export interface Connection extends ConnectionBase {
   namespace?: string
   subNamespace?: string
   maxConcurrency?: number
-  wrapSourceService?: string
-  defaultIdentId?: string
 }
 
 export interface Authentication extends AuthenticationBase {
