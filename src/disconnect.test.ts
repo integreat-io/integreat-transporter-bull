@@ -1,8 +1,8 @@
 import test from 'ava'
-import sinon = require('sinon')
-import { Connection } from './types'
+import sinon from 'sinon'
+import type { Connection } from './types.js'
 
-import disconnect from './disconnect'
+import disconnect from './disconnect.js'
 
 // Tests
 

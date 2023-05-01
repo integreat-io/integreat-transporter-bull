@@ -1,8 +1,8 @@
-import connect from './connect'
-import disconnect from './disconnect'
-import { EndpointOptions, Transporter } from './types'
-import send from './send'
-import listen from './listen'
+import connect from './connect.js'
+import disconnect from './disconnect.js'
+import type { EndpointOptions, Transporter } from './types.js'
+import send from './send.js'
+import listen from './listen.js'
 
 /**
  * Bull Queue Transporter for Integreat

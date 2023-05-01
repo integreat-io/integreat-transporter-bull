@@ -1,4 +1,4 @@
-import { JobId, Queue, AdvancedSettings } from 'bull'
+import type { JobId, Queue, AdvancedSettings } from 'bull'
 
 export interface RedisOptions {
   port?: number

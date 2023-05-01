@@ -4,16 +4,20 @@
   "description": "Bull Queue Transporter for Integreat",
   "author": "Kjell-Morten Bratsberg Thorsen <kjellmorten@integreat.io>",
   "license": "ISC",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
-    "test": "npm run lint && npm run build && nyc --reporter=text-summary ava --config ./ava-dist.config.js",
-    "test:inspect": "node --inspect node_modules/ava/profile.js",
+    "test": "npm run lint && npm run build && c8 --reporter=text-summary ava --config ./ava-dist.config.cjs",
     "test:watch": "npm run dev",
     "dev": "ava --watch",
     "build": "tsc",
-    "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "nyc:report": "nyc report --reporter=text --reporter=html",
+    "prepare": "npm run build",
+    "coverage": "c8 report",
     "lint": "eslint --ext .ts src"
   },
   "repository": {
@@ -25,17 +29,17 @@
   },
   "homepage": "https://github.com/integreat-io/integreat-transporter-bull#readme",
   "engines": {
-    "node": ">= 14"
+    "node": ">= 18"
   },
   "dependencies": {
-    "@types/bull": "^3.15.9",
+    "@types/bull": "^4.10.0",
     "@types/debug": "^4.1.7",
-    "bull": "^4.10.0",
+    "bull": "^4.10.4",
     "debug": "^4.3.4"
   },
   "devDependencies": {
-    "@integreat/ts-dev-setup": "^2.3.1",
-    "@types/sinon": "^10.0.13",
-    "sinon": "^14.0.1"
+    "@integreat/ts-dev-setup": "^4.0.1",
+    "@types/sinon": "^10.0.14",
+    "sinon": "^15.0.4"
   }
 }

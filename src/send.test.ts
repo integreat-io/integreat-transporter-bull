@@ -1,9 +1,9 @@
 import ava, { TestFn } from 'ava'
-import sinon = require('sinon')
-import Bull = require('bull')
-import connect from './connect'
+import sinon from 'sinon'
+import Bull from 'bull'
+import connect from './connect.js'
 
-import send from './send'
+import send from './send.js'
 
 // Setup
 

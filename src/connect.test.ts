@@ -1,9 +1,9 @@
 import test from 'ava'
-import sinon = require('sinon')
-import Bull = require('bull')
-import { Connection } from './types'
+import sinon from 'sinon'
+import Bull from 'bull'
+import type { Connection } from './types.js'
 
-import connect from './connect'
+import connect from './connect.js'
 
 interface QueueWithInternals extends Bull.Queue {
   keyPrefix: string

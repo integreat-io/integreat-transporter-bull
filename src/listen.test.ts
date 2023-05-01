@@ -1,8 +1,8 @@
 import test from 'ava'
-import { Queue } from 'bull'
-import * as sinon from 'sinon'
+import sinon from 'sinon'
+import type { Queue } from 'bull'
 
-import listen from './listen'
+import listen from './listen.js'
 
 // Setup
 const action = {

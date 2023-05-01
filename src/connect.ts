@@ -1,13 +1,13 @@
 /* eslint-disable security/detect-object-injection */
-import Bull = require('bull')
-import debug = require('debug')
-import { isObject } from './utils/is'
-import {
+import Bull from 'bull'
+import debug from 'debug'
+import { isObject } from './utils/is.js'
+import type {
   Connection,
   EndpointOptions,
   RedisOptions,
   Authentication,
-} from './types'
+} from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
 

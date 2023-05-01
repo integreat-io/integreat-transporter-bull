@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import test from 'ava'
 
-import transporter from '.'
+import transporter from './index.js'
 
 // Tests
 

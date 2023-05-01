@@ -1,5 +1,5 @@
-import debug = require('debug')
-import { Connection } from './types'
+import debug from 'debug'
+import type { Connection } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
 

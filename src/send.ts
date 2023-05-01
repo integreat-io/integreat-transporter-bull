@@ -1,6 +1,6 @@
-import * as debug from 'debug'
-import { Job, JobOptions, Queue } from 'bull'
-import { Action, Response, Connection, JobData } from './types'
+import debug from 'debug'
+import type { Job, JobOptions, Queue } from 'bull'
+import type { Action, Response, Connection, JobData } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
 

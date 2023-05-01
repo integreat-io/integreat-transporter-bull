@@ -1,8 +1,8 @@
 /* eslint-disable security/detect-object-injection */
-import { Job } from 'bull'
-import * as debug from 'debug'
-import { isObject, isAction } from './utils/is'
-import { Connection, Response, Action } from './types'
+import type { Job } from 'bull'
+import debug from 'debug'
+import { isObject, isAction } from './utils/is.js'
+import type { Connection, Response, Action } from './types.js'
 
 export interface PromiseWithProgress<T> extends Promise<T> {
   onProgress?: (cb: (progress?: number) => void) => void
