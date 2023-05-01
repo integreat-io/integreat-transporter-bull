@@ -171,8 +171,8 @@ test('should pass on bull advanced settings object', async (t) => {
   }
   const authentication = {
     status: 'granted',
-    username: 'me',
-    password: 's3cr3t',
+    key: 'me',
+    secret: 's3cr3t',
   }
 
   const conn = await connect(options, authentication, null, emit)
@@ -190,8 +190,8 @@ test('should pass on auth object', async (t) => {
   }
   const authentication = {
     status: 'granted',
-    username: 'me',
-    password: 's3cr3t',
+    key: 'me',
+    secret: 's3cr3t',
   }
 
   const conn = await connect(options, authentication, null, emit)

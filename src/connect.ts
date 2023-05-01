@@ -17,11 +17,11 @@ function redisOptionsWithAuth(
   redis?: RedisOptions | string | null,
   auth?: Authentication | null
 ): RedisOptions {
-  const { username, password } = auth || {}
+  const { key, secret } = auth || {}
   return {
     ...(typeof redis === 'string' ? {} : redis),
-    ...(typeof username === 'string' ? { username } : {}),
-    ...(typeof password === 'string' ? { password } : {}),
+    ...(typeof key === 'string' ? { username: key } : {}),
+    ...(typeof secret === 'string' ? { password: secret } : {}),
   }
 }
 

@@ -39,6 +39,7 @@ Example source configuration:
 {
   id: 'store',
   transporter: 'bull',
+  auth: true,
   endpoints: [
     {
       options: {
@@ -69,6 +70,14 @@ Available options for action meta options:
 - `bullSettings`: Advanced settings passed directly to bull. See
   [the AdvancedSettings object](https://github.com/OptimalBits/bull/blob/develop/REFERENCE.md#queue)
   in the bull documentation.
+
+In the example above, `auth` is set to `true`, to let Integreat know we don't
+require any authenticaton for this service. This is the correct way to do it
+when you have a Redis database without authentcation or when you include the
+password in the url (this is not recommended, although it is a normal convention
+for Redis). You may, however, pass a Redis username and/or password through an
+authenticator set on the `auth` prop of the service defintion. The expected
+props are `key` for the username and `secret` for the password.
 
 ### Running the tests
 
