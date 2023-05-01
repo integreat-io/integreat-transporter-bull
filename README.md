@@ -84,6 +84,11 @@ props are `key` for the username and `secret` for the password.
 
 The tests can be run with `npm test`.
 
+## Debugging
+
+Run Integreat with env variable `DEBUG=integreat:transporter:bull`, to receive
+debug messages.
+
 ## Contributing
 
 Please read
