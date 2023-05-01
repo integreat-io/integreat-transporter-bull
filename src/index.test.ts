@@ -22,7 +22,7 @@ test('should have authentication string', (t) => {
 
 test('should return options object as is', (t) => {
   const options = {
-    namespace: 'ns1',
+    queueId: 'ns1',
     redis: 'redis://redis1.test:6380',
   }
   const serviceId = 'queue'
@@ -36,7 +36,7 @@ test('should return options object as is', (t) => {
 
 test('should return true when options has no dontListen flag', (t) => {
   const options = {
-    namespace: 'ns1',
+    queueId: 'ns1',
     redis: 'redis://redis1.test:6380',
   }
 
@@ -47,7 +47,7 @@ test('should return true when options has no dontListen flag', (t) => {
 
 test('should return false when dontListen flag is true', (t) => {
   const options = {
-    namespace: 'ns1',
+    queueId: 'ns1',
     redis: 'redis://redis1.test:6380',
     dontListen: true,
   }
@@ -59,7 +59,7 @@ test('should return false when dontListen flag is true', (t) => {
 
 test('should return true when dontListen flag is false', (t) => {
   const options = {
-    namespace: 'ns1',
+    queueId: 'ns1',
     redis: 'redis://redis1.test:6380',
     dontListen: false,
   }

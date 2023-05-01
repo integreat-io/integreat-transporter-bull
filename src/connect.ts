@@ -26,7 +26,7 @@ function redisOptionsWithAuth(
 }
 
 function createQueue(
-  namespace: string,
+  queueId: string,
   redis?: string | RedisOptions | null,
   authentication?: Authentication | null,
   prefix = 'bull',
@@ -40,8 +40,8 @@ function createQueue(
     maxRetriesPerRequest: null,
   }
   return typeof redis === 'string'
-    ? new Bull(namespace, redis, options)
-    : new Bull(namespace, options)
+    ? new Bull(queueId, redis, options)
+    : new Bull(queueId, options)
 }
 
 // Relies on the internal `status` prop of Bull to be `'end'` when connection
@@ -51,8 +51,8 @@ const isDisconnected = (queue?: Bull.Queue) => queue?.client.status === 'end'
 export default async function (
   {
     redis,
-    namespace = 'great',
-    subNamespace,
+    queueId = 'great',
+    subQueueId,
     queue: queueFromOptions,
     keyPrefix,
     bullSettings,
@@ -67,24 +67,18 @@ export default async function (
     connection.status === 'ok' &&
     !isDisconnected(connection.queue)
   ) {
-    debugLog(`Reusing bull queue '${connection.namespace}'`)
+    debugLog(`Reusing bull queue '${connection.queueId}'`)
     return connection
   }
 
-  let queue = queues[namespace] ?? queueFromOptions
+  let queue = queues[queueId] ?? queueFromOptions
 
   if (!queue) {
-    queue = createQueue(
-      namespace,
-      redis,
-      authentication,
-      keyPrefix,
-      bullSettings
-    )
-    debugLog(`Created bull queue '${namespace}'`)
+    queue = createQueue(queueId, redis, authentication, keyPrefix, bullSettings)
+    debugLog(`Created bull queue '${queueId}'`)
 
     // Cache queue for reuse
-    queues[namespace] = queue
+    queues[queueId] = queue
 
     // Listen to errors from queue
     queue.on('error', (error) =>
@@ -95,8 +89,8 @@ export default async function (
   return {
     status: 'ok',
     queue,
-    namespace,
-    subNamespace,
+    queueId,
+    subQueueId,
     maxConcurrency,
   }
 }

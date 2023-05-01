@@ -10,13 +10,65 @@ This implementation is based on [Bull](https://github.com/OptimalBits/bull).
 
 Requires node v18 and Integreat v0.8.
 
-### Installing
+### Installing and using
 
 Install from npm:
 
 ```
-npm install integreat-transporter-bull --save
+npm install integreat-transporter-bull
 ```
+
+Example of use:
+
+```javascript
+const integreat = require('integreat')
+const bullAdapter = require('integreat-transport-bull')
+const defs = require('./config')
+
+const resources = integreat.mergeResources(integreat.resources(), {
+  transporters: { bull: bullAdapter() },
+})
+const great = integreat(defs, resources)
+
+// ... and then dispatch actions as usual
+```
+
+Example source configuration:
+
+```javascript
+{
+  id: 'store',
+  transporter: 'bull',
+  endpoints: [
+    {
+      options: {
+        queueId: 'bull-queue',
+        maxConcurrency: 5,
+      }
+    }
+  ]
+}
+```
+
+Available options for action meta options:
+
+- `queue`: An existing bull queue object to reuse instead of having the
+  transporter create its own
+- `queueId`: The queue id for the bull queue. Default is `great`
+- `subQueueId`: Bull support different job types in the same queue. By setting
+  `subQueueId`, jobs will be pushed to the queue with this string as job type,
+  and in effect creating a "sub-queue". When you don't specify subQueueId`, the
+  default job type will be used.
+- `maxConcurrency`: Specifies how many parallell jobs Integreat may pick from
+  the queue. Default is `1`.
+- `redis`: A redis connection url or a ioredis options object. See the
+  [ioredis documentation](https://github.com/luin/ioredis/blob/v4/API.md) for
+  details on the options object.
+- `keyPrefix`: When this is set, all Redis keys will be prefixed with this
+  string. Default prefix is `bull`
+- `bullSettings`: Advanced settings passed directly to bull. See
+  [the AdvancedSettings object](https://github.com/OptimalBits/bull/blob/develop/REFERENCE.md#queue)
+  in the bull documentation.
 
 ### Running the tests
 

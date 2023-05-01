@@ -11,7 +11,7 @@ test('should disconnect', async (t) => {
   const queue = {
     close: closeStub,
   }
-  const conn = { status: 'ok', queue, namespace: 'ns1' }
+  const conn = { status: 'ok', queue, queueId: 'ns1' }
 
   await disconnect(conn as unknown as Connection)
 
@@ -19,7 +19,7 @@ test('should disconnect', async (t) => {
 })
 
 test('should do nothing when connection has no queue', async (t) => {
-  const conn = { status: 'ok', queue: undefined, namespace: 'ns1' }
+  const conn = { status: 'ok', queue: undefined, queueId: 'ns1' }
 
   await t.notThrowsAsync(disconnect(conn))
 })

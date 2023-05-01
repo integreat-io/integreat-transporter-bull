@@ -8,8 +8,8 @@ export default async function disconnect(
 ): Promise<void> {
   if (connection?.queue) {
     await connection?.queue?.close()
-    debugLog(`Closed bull queue '${connection.namespace}'`)
+    debugLog(`Closed bull queue '${connection.queueId}'`)
   } else {
-    debugLog(`Bull queue '${connection?.namespace}' is already closed`)
+    debugLog(`Bull queue '${connection?.queueId}' is already closed`)
   }
 }

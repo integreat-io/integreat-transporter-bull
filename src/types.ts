@@ -33,8 +33,8 @@ export interface RedisOptions {
 
 export interface EndpointOptions extends Record<string, unknown> {
   queue?: Queue
-  namespace?: string
-  subNamespace?: string
+  queueId?: string
+  subQueueId?: string
   maxConcurrency?: number
   redis?: string | RedisOptions
   keyPrefix?: string
@@ -43,8 +43,8 @@ export interface EndpointOptions extends Record<string, unknown> {
 
 export interface Connection extends ConnectionBase {
   queue?: Queue
-  namespace?: string
-  subNamespace?: string
+  queueId?: string
+  subQueueId?: string
   maxConcurrency?: number
 }
 
@@ -56,5 +56,5 @@ export interface Authentication extends AuthenticationBase {
 export interface JobData {
   id: JobId
   timestamp: number
-  namespace: string
+  queueId: string
 }

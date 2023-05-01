@@ -7,14 +7,14 @@ import send from './send.js'
 
 // Setup
 
-const test = ava as TestFn<{ queue: Bull.Queue; namespace: string }>
+const test = ava as TestFn<{ queue: Bull.Queue; queueId: string }>
 
-let namespaceCount = 1
-const nextNamespace = () => 'send' + namespaceCount++
+let queueCount = 1
+const nextQueueId = () => 'send' + queueCount++
 
 test.beforeEach(async (t) => {
-  const namespace = (t.context.namespace = nextNamespace())
-  t.context.queue = new Bull(namespace)
+  const queueId = (t.context.queueId = nextQueueId())
+  t.context.queue = new Bull(queueId)
 })
 
 test.afterEach.always(async (t) => {
@@ -36,8 +36,8 @@ const emit = () => undefined
 // Tests -- action
 
 test('should send job with action and return status and data', async (t) => {
-  const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null, emit)
+  const { queue, queueId } = t.context
+  const connection = await connect({ queue, queueId }, null, null, emit)
   const expectedAction = {
     type: 'SET',
     payload: { type: 'entry', data: { id: 'ent1', title: 'Entry 1' } },
@@ -52,15 +52,15 @@ test('should send job with action and return status and data', async (t) => {
   const expectedData = {
     id: jobs[0].id,
     timestamp: jobs[0].timestamp,
-    namespace: jobs[0].name,
+    queueId: jobs[0].name,
   }
   t.deepEqual(ret.data, expectedData)
 })
 
-test('should send job to queue with sub namespace', async (t) => {
-  const { queue, namespace } = t.context
+test('should send job to queue with subQueueId', async (t) => {
+  const { queue, queueId } = t.context
   const connection = await connect(
-    { queue, namespace: namespace, subNamespace: `${namespace}_sub` },
+    { queue, queueId, subQueueId: `${queueId}_sub` },
     null,
     null,
     emit
@@ -76,19 +76,14 @@ test('should send job to queue with sub namespace', async (t) => {
   const expectedData = {
     id: jobs[0].id,
     timestamp: jobs[0].timestamp,
-    namespace: `${namespace}_sub`,
+    queueId: `${queueId}_sub`,
   }
   t.deepEqual(ret.data, expectedData)
 })
 
-test('should send job to queue with sub namespace from action meta', async (t) => {
-  const { queue, namespace } = t.context
-  const connection = await connect(
-    { queue, namespace: namespace },
-    null,
-    null,
-    emit
-  )
+test('should send job to queue with subQueueId from action meta', async (t) => {
+  const { queue, queueId } = t.context
+  const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SET',
     payload: {
@@ -96,7 +91,7 @@ test('should send job to queue with sub namespace from action meta', async (t) =
       data: { id: 'ent1', title: 'Entry 1' },
     },
     meta: {
-      subQueue: `${namespace}_sub`,
+      subQueue: `${queueId}_sub`,
     },
   }
   const expectedAction = {
@@ -117,14 +112,14 @@ test('should send job to queue with sub namespace from action meta', async (t) =
   const expectedData = {
     id: jobs[0].id,
     timestamp: jobs[0].timestamp,
-    namespace: `${namespace}_sub`,
+    queueId: `${queueId}_sub`,
   }
   t.deepEqual(ret.data, expectedData)
 })
 
 test('should use action id as job id', async (t) => {
-  const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null, emit)
+  const { queue, queueId } = t.context
+  const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SET',
     payload: { type: 'entry', data: { id: 'ent1', title: 'Entry 1' } },
@@ -139,7 +134,7 @@ test('should use action id as job id', async (t) => {
 
 test('should return error when queue throws', async (t) => {
   const queue = {} as Bull.Queue // To force an exception
-  const connection = { status: 'ok', queue, namespace: 'invalidQueue' }
+  const connection = { status: 'ok', queue, queueId: 'invalidQueue' }
 
   const ret = await send(action, connection)
 
@@ -148,7 +143,7 @@ test('should return error when queue throws', async (t) => {
 })
 
 test('should return error when no queue', async (t) => {
-  const connection = { status: 'ok', queue: undefined, namespace: 'great' }
+  const connection = { status: 'ok', queue: undefined, queueId: 'great' }
 
   const ret = await send(action, connection)
 
@@ -168,8 +163,8 @@ test('should return error when no connection', async (t) => {
 // Tests -- clean
 
 test('should clean waiting jobs with SERVICE action', async (t) => {
-  const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null, emit)
+  const { queue, queueId } = t.context
+  const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanWaiting' },
@@ -186,8 +181,8 @@ test('should clean waiting jobs with SERVICE action', async (t) => {
 })
 
 test('should not clean waiting jobs newer than given ms with SERVICE action', async (t) => {
-  const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null, emit)
+  const { queue, queueId } = t.context
+  const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanWaiting', olderThanMs: 7200000 },
@@ -204,8 +199,8 @@ test('should not clean waiting jobs newer than given ms with SERVICE action', as
 })
 
 test('should clean scheduled jobs with SERVICE action', async (t) => {
-  const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null, emit)
+  const { queue, queueId } = t.context
+  const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanScheduled' },
@@ -222,9 +217,9 @@ test('should clean scheduled jobs with SERVICE action', async (t) => {
 })
 
 test('should clean completed jobs with SERVICE action', async (t) => {
-  const { queue, namespace } = t.context
+  const { queue, queueId } = t.context
   const cleanSpy = sinon.spy(queue, 'clean')
-  const connection = await connect({ queue, namespace }, null, null, emit)
+  const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanCompleted' },
@@ -240,9 +235,9 @@ test('should clean completed jobs with SERVICE action', async (t) => {
 })
 
 test('should clean completed jobs older than given ms with SERVICE action', async (t) => {
-  const { queue, namespace } = t.context
+  const { queue, queueId } = t.context
   const cleanSpy = sinon.spy(queue, 'clean')
-  const connection = await connect({ queue, namespace }, null, null, emit)
+  const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanCompleted', olderThanMs: 3600000 },
@@ -258,8 +253,8 @@ test('should clean completed jobs older than given ms with SERVICE action', asyn
 })
 
 test('should clean more job types with the same SERVICE action', async (t) => {
-  const { queue, namespace } = t.context
-  const connection = await connect({ queue, namespace }, null, null, emit)
+  const { queue, queueId } = t.context
+  const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: ['cleanWaiting', 'cleanScheduled'] },
@@ -279,9 +274,9 @@ test('should clean more job types with the same SERVICE action', async (t) => {
 })
 
 test('should return error when cleaning fails', async (t) => {
-  const { queue, namespace } = t.context
+  const { queue, queueId } = t.context
   sinon.stub(queue, 'clean').rejects(new Error('No queue!'))
-  const connection = await connect({ queue, namespace }, null, null, emit)
+  const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanCompleted' },

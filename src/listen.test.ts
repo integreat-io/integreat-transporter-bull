@@ -18,7 +18,7 @@ const dispatch = async () => ({ status: 'ok', data: [] })
 test('should listen to queue and dispatch action', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
-  const connection = { status: 'ok', queue, namespace: 'great' }
+  const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
   const expected = { status: 'ok' }
   const expectedAction = {
@@ -38,20 +38,20 @@ test('should listen to queue and dispatch action', async (t) => {
   t.deepEqual(processResponse, expectedQueueResponse)
 })
 
-test('should listen to sub namespace', async (t) => {
+test('should listen to subQueueId', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection1 = {
     status: 'ok',
     queue,
-    namespace: 'great',
-    subNamespace: 'ns1',
+    queueId: 'great',
+    subQueueId: 'ns1',
   }
   const connection2 = {
     status: 'ok',
     queue,
-    namespace: 'great',
-    subNamespace: 'ns2',
+    queueId: 'great',
+    subQueueId: 'ns2',
   }
   const dispatch1 = sinon.stub().resolves({ status: 'ok', data: [] })
   const dispatch2 = sinon.stub().resolves({ status: 'ok', data: [] })
@@ -73,7 +73,7 @@ test('should listen to sub namespace', async (t) => {
   }) // Call internal handler to make sure it calls ns2 dispatch
 
   t.is(processStub.callCount, 1)
-  t.is(processStub.args[0][0], '*') // Catch-all namespace
+  t.is(processStub.args[0][0], '*') // Catch-all queue
   t.is(processStub.args[0][1], 1) // Default max concurrency
   t.is(dispatch1.callCount, 0)
   t.is(dispatch2.callCount, 1)
@@ -86,7 +86,7 @@ test('should listen to sub namespace', async (t) => {
 test('should wrap non-action jobs in a REQUEST action and unwrap response', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
-  const connection = { status: 'ok', queue, namespace: 'great' }
+  const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon
     .stub()
     .resolves({ status: 'ok', data: { ok: true, context: {} } })
@@ -111,7 +111,7 @@ test('should wrap non-action jobs in a REQUEST action and unwrap response', asyn
 test('should not override action id', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
-  const connection = { status: 'ok', queue, namespace: 'great' }
+  const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
   const actionWithId = {
     ...action,
@@ -130,7 +130,7 @@ test('should not override action id', async (t) => {
 test('should not set action id when job is missing id', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
-  const connection = { status: 'ok', queue, namespace: 'great' }
+  const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
   const expected = { status: 'ok' }
 
@@ -147,7 +147,7 @@ test('should update job progress when handler function support it', async (t) =>
   const processStub = sinon.stub()
   const onProgressStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
-  const connection = { status: 'ok', queue, namespace: 'great' }
+  const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon.stub().callsFake(() => {
     const p = new Promise((resolve) => {
       setTimeout(() => {
@@ -183,7 +183,7 @@ test('should update job progress when handler function support it', async (t) =>
 test('should reject when action response is error', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
-  const connection = { status: 'ok', queue, namespace: 'great' }
+  const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon
     .stub()
     .resolves({ status: 'notfound', error: 'Where?' })
@@ -200,7 +200,7 @@ test('should reject when action response is error', async (t) => {
 test('should not reject when action response is noaction', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
-  const connection = { status: 'ok', queue, namespace: 'great' }
+  const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon
     .stub()
     .resolves({ status: 'noaction', error: 'Nothing to do' })
@@ -216,7 +216,7 @@ test('should not reject when action response is noaction', async (t) => {
 test('should not reject when action response is queued', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
-  const connection = { status: 'ok', queue, namespace: 'great' }
+  const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon.stub().resolves({ status: 'queued' })
   const expected = { status: 'ok' }
 
@@ -230,7 +230,7 @@ test('should not reject when action response is queued', async (t) => {
 test('should reject when response is not a valid response', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
-  const connection = { status: 'ok', queue, namespace: 'great' }
+  const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon.stub().resolves(null)
   const expected = { status: 'ok' }
 
@@ -251,7 +251,7 @@ test('should call process with max concurrency', async (t) => {
   const connection = {
     status: 'ok',
     queue,
-    namespace: 'great',
+    queueId: 'great',
     maxConcurrency: 5,
   }
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
@@ -267,7 +267,7 @@ test('should call process with max concurrency', async (t) => {
 test('should return error when listening fails', async (t) => {
   const processStub = sinon.stub().throws(new Error('Will not listen'))
   const queue = { process: processStub } as unknown as Queue
-  const connection = { status: 'ok', queue, namespace: 'great' }
+  const connection = { status: 'ok', queue, queueId: 'great' }
   const expected = {
     status: 'error',
     error: 'Cannot listen to queue. Error: Will not listen',
@@ -279,7 +279,7 @@ test('should return error when listening fails', async (t) => {
 })
 
 test('should return error when no queue', async (t) => {
-  const connection = { status: 'ok', queue: undefined, namespace: 'great' }
+  const connection = { status: 'ok', queue: undefined, queueId: 'great' }
   const expected = {
     status: 'error',
     error: 'Cannot listen to queue. No queue',

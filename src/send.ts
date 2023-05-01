@@ -11,7 +11,7 @@ const ensureArray = <T>(value: T | T[]): T[] =>
 const dataFromJob = ({ id, timestamp, name }: Job): JobData => ({
   id,
   timestamp,
-  namespace: name,
+  queueId: name,
 })
 
 async function runServiceAction(action: Action, queue: Queue) {
@@ -48,11 +48,11 @@ async function push(
   queue: Queue,
   action: Action,
   options: JobOptions,
-  subNamespace?: string
+  subQueueId?: string
 ) {
-  const namespace = action.meta?.subQueue || subNamespace
-  if (typeof namespace === 'string') {
-    return await queue.add(namespace, removeMetaProps(action), options)
+  const queueId = action.meta?.subQueue || subQueueId
+  if (typeof queueId === 'string') {
+    return await queue.add(queueId, removeMetaProps(action), options)
   } else {
     return await queue.add(removeMetaProps(action), options)
   }
@@ -62,16 +62,16 @@ export default async function send(
   action: Action,
   connection: Connection | null
 ): Promise<Response<JobData>> {
-  const { queue, subNamespace } = connection || {}
+  const { queue, subQueueId } = connection || {}
   if (!queue) {
     debugLog(
-      `Cannot send action to bull queue '${connection?.namespace}': No queue`
+      `Cannot send action to bull queue '${connection?.queueId}': No queue`
     )
     return { status: 'error', error: 'Cannot send action to queue. No queue' }
   }
 
   if (action.type === 'SERVICE') {
-    debugLog(`SERVICE action sent to bull queue '${connection?.namespace}'`)
+    debugLog(`SERVICE action sent to bull queue '${connection?.queueId}'`)
     return runServiceAction(action, queue)
   }
 
@@ -82,15 +82,15 @@ export default async function send(
 
   try {
     await queue.isReady() // Don't add job until queue is ready
-    const job = await push(queue, action, options, subNamespace)
+    const job = await push(queue, action, options, subQueueId)
     debugLog(
-      `Added job '${job.id}' to queue ${
-        connection?.namespace
-      }': ${JSON.stringify(action)}`
+      `Added job '${job.id}' to queue ${connection?.queueId}': ${JSON.stringify(
+        action
+      )}`
     )
     return { status: 'ok', data: dataFromJob(job) }
   } catch (error) {
-    debugLog(`Error sending to bull queue ${connection?.namespace}'. ${error}`)
+    debugLog(`Error sending to bull queue ${connection?.queueId}'. ${error}`)
     return { status: 'error', error: `Sending to queue failed. ${error}` }
   }
 }

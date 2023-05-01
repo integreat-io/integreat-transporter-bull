@@ -35,30 +35,30 @@ const setJobIdWhenNoActionId = (action: Action, id?: string | number) =>
 
 function resolveDispatch(
   dispatch: DispatchWithProgress | null,
-  namespace: string,
-  subNamespace?: string
+  queueId: string,
+  subQueueId?: string
 ) {
   if (typeof dispatch === 'function') {
     return dispatch
-  } else if (subNamespace && dispatches[namespace]) {
-    return dispatches[namespace][subNamespace]
+  } else if (subQueueId && dispatches[queueId]) {
+    return dispatches[queueId][subQueueId]
   } else {
     return null
   }
 }
 
-const handler = (dispatch: DispatchWithProgress | null, namespace: string) =>
+const handler = (dispatch: DispatchWithProgress | null, queueId: string) =>
   async function processJob(job: Job) {
     const { data, name, id } = job
 
-    const dispatchFn = resolveDispatch(dispatch, namespace, name)
+    const dispatchFn = resolveDispatch(dispatch, queueId, name)
     if (typeof dispatchFn !== 'function') {
       const errorReason =
-        !namespace || dispatches[namespace]
-          ? !namespace || !name || dispatches[namespace][name]
+        !queueId || dispatches[queueId]
+          ? !queueId || !name || dispatches[queueId][name]
             ? 'dispatch is not a function'
-            : `No queue named '${namespace}:${name}`
-          : `No queue named '${namespace}`
+            : `No queue named '${queueId}:${name}`
+          : `No queue named '${queueId}`
       debugLog(`Could not handle action from queue. ${errorReason}`)
       throw new Error(`Could not handle action from queue. ${errorReason}`)
     }
@@ -101,8 +101,8 @@ const handler = (dispatch: DispatchWithProgress | null, namespace: string) =>
     }
   }
 
-const isFirstListenForNamespace = (dispatches: Dispatches, namespace: string) =>
-  !dispatches[namespace]
+const isFirstListenForQueue = (dispatches: Dispatches, queueId: string) =>
+  !dispatches[queueId]
 
 export default async function listen(
   dispatch: DispatchWithProgress,
@@ -111,39 +111,37 @@ export default async function listen(
   const {
     queue,
     maxConcurrency = 1,
-    namespace = 'great',
-    subNamespace,
+    queueId = 'great',
+    subQueueId,
   } = connection || {}
   if (!queue) {
-    debugLog(`Cannot listen to queue '${namespace}'. No queue`)
+    debugLog(`Cannot listen to queue '${queueId}'. No queue`)
     return { status: 'error', error: 'Cannot listen to queue. No queue' }
   }
 
   try {
     // Start listening to queue
-    if (subNamespace) {
-      // We have a sub namespace – let's store all dispatches and have a catch-all listener
+    if (subQueueId) {
+      // We have a sub queue – let's store all dispatches and have a catch-all listener
 
-      if (isFirstListenForNamespace(dispatches, namespace)) {
+      if (isFirstListenForQueue(dispatches, queueId)) {
         // Set up listener and create object for storing dispatches
-        queue.process('*', maxConcurrency, handler(null, namespace))
-        dispatches[namespace] = {}
+        queue.process('*', maxConcurrency, handler(null, queueId))
+        dispatches[queueId] = {}
       }
 
-      dispatches[namespace][subNamespace] = dispatch
+      dispatches[queueId][subQueueId] = dispatch
 
-      debugLog(
-        `Listening to queue '${namespace}' for sub namespace '${subNamespace}'`
-      )
+      debugLog(`Listening to queue '${queueId}' for sub queue '${subQueueId}'`)
     } else {
-      // Normal setup with on queue per namespace
-      queue.process(maxConcurrency, handler(dispatch, namespace))
-      debugLog(`Listening to queue '${namespace}'`)
+      // Normal setup with on queue per queueId
+      queue.process(maxConcurrency, handler(dispatch, queueId))
+      debugLog(`Listening to queue '${queueId}'`)
     }
 
     return { status: 'ok' }
   } catch (error) {
-    debugLog(`Cannot listen to queue '${namespace}'. ${error}`)
+    debugLog(`Cannot listen to queue '${queueId}'. ${error}`)
     return { status: 'error', error: `Cannot listen to queue. ${error}` }
   }
 }
