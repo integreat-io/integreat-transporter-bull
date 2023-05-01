@@ -1,6 +1,6 @@
+import type { Transporter } from 'integreat'
 import connect from './connect.js'
 import disconnect from './disconnect.js'
-import type { EndpointOptions, Transporter } from './types.js'
 import send from './send.js'
 import listen from './listen.js'
 
@@ -10,7 +10,7 @@ import listen from './listen.js'
 const bullTransporter: Transporter = {
   authentication: 'asObject',
 
-  prepareOptions: (options: EndpointOptions, _serviceId: string) => options,
+  prepareOptions: (options, _serviceId) => options,
 
   connect,
 

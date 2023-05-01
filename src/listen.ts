@@ -1,8 +1,9 @@
 /* eslint-disable security/detect-object-injection */
+import type { Action, Response } from 'integreat'
 import type { Job } from 'bull'
 import debug from 'debug'
 import { isObject, isAction } from './utils/is.js'
-import type { Connection, Response, Action } from './types.js'
+import type { Connection } from './types.js'
 
 export interface PromiseWithProgress<T> extends Promise<T> {
   onProgress?: (cb: (progress?: number) => void) => void
