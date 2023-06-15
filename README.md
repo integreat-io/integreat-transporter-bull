@@ -22,14 +22,13 @@ npm install integreat-transporter-bull
 Example of use:
 
 ```javascript
-const integreat = require('integreat')
-const bullAdapter = require('integreat-transport-bull')
-const defs = require('./config')
+import Integreat from 'integreat'
+import bullTransporter from 'integreat-transport-bull'
+import defs from './config'
 
-const resources = integreat.mergeResources(integreat.resources(), {
-  transporters: { bull: bullAdapter() },
+const great = Integreat.create(defs, {
+  transporters: { bull: bullTransporter() },
 })
-const great = integreat(defs, resources)
 
 // ... and then dispatch actions as usual
 ```
@@ -80,14 +79,14 @@ for Redis). You may, however, pass a Redis username and/or password through an
 authenticator set on the `auth` prop of the service defintion. The expected
 props are `key` for the username and `secret` for the password.
 
-### Running the tests
-
-The tests can be run with `npm test`.
-
-## Debugging
+### Debugging
 
 Run Integreat with env variable `DEBUG=integreat:transporter:bull`, to receive
 debug messages.
+
+### Running the tests
+
+The tests can be run with `npm test`.
 
 ## Contributing
 
