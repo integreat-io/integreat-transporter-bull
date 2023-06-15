@@ -13,10 +13,11 @@
   },
   "scripts": {
     "test": "npm run lint && npm run build && c8 --reporter=text-summary ava --config ./ava-dist.config.cjs",
+    "test:setup": "docker-compose up",
+    "test:teardown": "docker-compose down",
     "test:watch": "npm run dev",
     "dev": "ava --watch",
     "build": "tsc",
-    "prepare": "npm run build",
     "coverage": "c8 report",
     "lint": "eslint --ext .ts src"
   },
@@ -33,14 +34,14 @@
   },
   "dependencies": {
     "@types/bull": "^4.10.0",
-    "@types/debug": "^4.1.7",
+    "@types/debug": "^4.1.8",
     "bull": "^4.10.4",
     "debug": "^4.3.4"
   },
   "devDependencies": {
-    "@integreat/ts-dev-setup": "^4.0.1",
-    "@types/sinon": "^10.0.14",
-    "integreat": "^0.8.0-rc.4",
-    "sinon": "^15.0.4"
+    "@integreat/ts-dev-setup": "^4.1.0",
+    "@types/sinon": "^10.0.15",
+    "integreat": "^0.8.1",
+    "sinon": "^15.1.2"
   }
 }
