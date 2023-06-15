@@ -51,7 +51,16 @@ Example source configuration:
 }
 ```
 
-Available options for action meta options:
+**Note:** In the example above, `auth` is set to `true`, to let Integreat know
+we don't require any authenticaton for this service. This is the correct way to
+do it when you have a Redis database without authentication or when you include
+the password in the url (this is not recommended, although it is a normal
+convention for Redis). You may, however, pass a Redis username and/or password
+through an authenticator set on the `auth` prop of the service defintion. The
+expected props are `key` for the username and `secret` for the password. You may
+also specify the username and password on the options object (see below).
+
+Available properties for the `options` object:
 
 - `queue`: An existing bull queue object to reuse instead of having the
   transporter create its own
@@ -62,22 +71,22 @@ Available options for action meta options:
   default job type will be used.
 - `maxConcurrency`: Specifies how many parallell jobs Integreat may pick from
   the queue. Default is `1`.
-- `redis`: A redis connection url or a ioredis options object. See the
-  [ioredis documentation](https://github.com/luin/ioredis/blob/v4/API.md) for
-  details on the options object.
+- `redis`: A redis connection url or an object with the properties listed below.
 - `keyPrefix`: When this is set, all Redis keys will be prefixed with this
   string. Default prefix is `bull`
 - `bullSettings`: Advanced settings passed directly to bull. See
   [the AdvancedSettings object](https://github.com/OptimalBits/bull/blob/develop/REFERENCE.md#queue)
   in the bull documentation.
 
-In the example above, `auth` is set to `true`, to let Integreat know we don't
-require any authenticaton for this service. This is the correct way to do it
-when you have a Redis database without authentcation or when you include the
-password in the url (this is not recommended, although it is a normal convention
-for Redis). You may, however, pass a Redis username and/or password through an
-authenticator set on the `auth` prop of the service defintion. The expected
-props are `key` for the username and `secret` for the password.
+The available properties for the `redis` options object are as follow:
+
+- `uri`: The entire URL of Redis database
+- `host`: The Redis server hostname, default is `localhost`
+- `port`: The Redis server port, default is `6379`
+- `auth`: The Redis username as `key` and Redis password as `secret`
+- `tls`: Set to `true` to enable TLS. Default is `false`
+
+You may choose to set the `uri` or specify the individual properties.
 
 ### Debugging
 

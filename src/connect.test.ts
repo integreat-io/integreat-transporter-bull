@@ -3,7 +3,7 @@ import sinon from 'sinon'
 import Bull from 'bull'
 import type { Connection } from './types.js'
 
-import connect from './connect.js'
+import connect, { prepareRedisOptions } from './connect.js'
 
 interface QueueWithInternals extends Bull.Queue {
   keyPrefix: string
@@ -261,4 +261,113 @@ test('should emit error from bull', async (t) => {
   t.is(emit.args[1][0], 'error')
   const err = emit.args[1][1] as Error
   t.deepEqual(err.message, 'Bull error: getaddrinfo ENOTFOUND unknown.test')
+})
+
+// Tests -- redis options
+
+test('should return redis options for an url string', (t) => {
+  const options = 'redis://redis1.test:6380'
+  const expected = {
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    uri: 'redis://redis1.test:6380',
+  }
+
+  const ret = prepareRedisOptions(options)
+
+  t.deepEqual(ret, expected)
+})
+
+test('should return redis options from an object with uri', (t) => {
+  const options = { uri: 'redis://redis1.test:6380' }
+  const expected = {
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    uri: 'redis://redis1.test:6380',
+  }
+
+  const ret = prepareRedisOptions(options)
+
+  t.deepEqual(ret, expected)
+})
+
+test('should return redis options from individual params', (t) => {
+  const options = {
+    host: 'redis1.test',
+    port: 6380,
+    tls: false,
+    auth: { key: 'johnf', secret: 's3cr3t' },
+  }
+  const expected = {
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    host: 'redis1.test',
+    port: 6380,
+    username: 'johnf',
+    password: 's3cr3t',
+  }
+
+  const ret = prepareRedisOptions(options)
+
+  t.deepEqual(ret, expected)
+})
+
+test('should return redis options from individual params with tls', (t) => {
+  const options = {
+    host: 'redis1.test',
+    port: 6380,
+    tls: true,
+    auth: { key: 'johnf', secret: 's3cr3t' },
+  }
+  const expected = {
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    host: 'redis1.test',
+    port: 6380,
+    username: 'johnf',
+    password: 's3cr3t',
+    tls: { host: 'redis1.test', port: 6380 },
+  }
+
+  const ret = prepareRedisOptions(options)
+
+  t.deepEqual(ret, expected)
+})
+
+test('should return redis options with auth', (t) => {
+  const options = 'redis://redis1.test:6380'
+  const auth = { key: 'reidun', secret: 'passord1' }
+  const expected = {
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    uri: 'redis://redis1.test:6380',
+    username: 'reidun',
+    password: 'passord1',
+  }
+
+  const ret = prepareRedisOptions(options, auth)
+
+  t.deepEqual(ret, expected)
+})
+
+test('should return redis options with auth overriding the options key and secret', (t) => {
+  const options = {
+    host: 'redis1.test',
+    port: 6380,
+    tls: false,
+    auth: { key: 'johnf', secret: 's3cr3t' },
+  }
+  const auth = { key: 'reidun', secret: 'passord1' }
+  const expected = {
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    host: 'redis1.test',
+    port: 6380,
+    username: 'reidun',
+    password: 'passord1',
+  }
+
+  const ret = prepareRedisOptions(options, auth)
+
+  t.deepEqual(ret, expected)
 })

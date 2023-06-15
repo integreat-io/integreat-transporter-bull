@@ -1,5 +1,6 @@
 /* eslint-disable security/detect-object-injection */
-import Bull from 'bull'
+import Bull, { QueueOptions } from 'bull'
+import { RedisOptions as IORedisOptions } from 'ioredis'
 import debug from 'debug'
 import { isObject } from './utils/is.js'
 import type {
@@ -13,13 +14,39 @@ const debugLog = debug('integreat:transporter:bull')
 
 const queues: Record<string, Bull.Queue> = {}
 
-function redisOptionsWithAuth(
+const renameRedisOptions = ({
+  uri,
+  host,
+  port,
+  tls,
+  auth: { key, secret } = {},
+}: RedisOptions) =>
+  typeof uri === 'string'
+    ? { uri }
+    : {
+        host,
+        port,
+        username: key,
+        password: secret,
+        ...(tls ? { tls: { host, port } } : {}),
+      }
+
+export function prepareRedisOptions(
   redis?: RedisOptions | string | null,
   auth?: Authentication | null
-): RedisOptions {
+): IORedisOptions & { uri?: string } {
   const { key, secret } = auth || {}
+  const options =
+    typeof redis === 'string'
+      ? { uri: redis }
+      : isObject(redis)
+      ? renameRedisOptions(redis)
+      : {}
+
   return {
-    ...(typeof redis === 'string' ? {} : redis),
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    ...options,
     ...(typeof key === 'string' ? { username: key } : {}),
     ...(typeof secret === 'string' ? { password: secret } : {}),
   }
@@ -32,15 +59,14 @@ function createQueue(
   prefix = 'bull',
   settings = {}
 ) {
-  const options = {
-    redis: redisOptionsWithAuth(redis, authentication),
+  const { uri, ...redisOptions } = prepareRedisOptions(redis, authentication)
+  const options: QueueOptions = {
+    redis: redisOptions,
     prefix,
     settings,
-    enableReadyCheck: false,
-    maxRetriesPerRequest: null,
   }
-  return typeof redis === 'string'
-    ? new Bull(queueId, redis, options)
+  return typeof uri === 'string'
+    ? new Bull(queueId, uri, options)
     : new Bull(queueId, options)
 }
 

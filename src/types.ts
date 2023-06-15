@@ -2,30 +2,14 @@ import { Connection as ConnectionBase } from 'integreat'
 import type { JobId, Queue, AdvancedSettings } from 'bull'
 
 export interface RedisOptions {
-  port?: number
+  uri?: string
   host?: string
-  family?: number
-  path?: string
-  keepAlive?: number
-  connectionName?: string
-  password?: string
-  db?: number
-  enableReadyCheck?: boolean
-  keyPrefix?: string
-  retryStrategy?(times: number): number | void | null
-  maxRetriesPerRequest?: number | null
-  reconnectOnError?(error: Error): boolean | 1 | 2
-  enableOfflineQueue?: boolean
-  connectTimeout?: number
-  autoResubscribe?: boolean
-  autoResendUnfulfilledCommands?: boolean
-  lazyConnect?: boolean
-  tls?: Record<string, unknown>
-  sentinels?: Array<{ host: string; port: number }>
-  name?: string
-  readOnly?: boolean
-  dropBufferSupport?: boolean
-  showFriendlyErrorStack?: boolean
+  port?: number
+  tls?: boolean
+  auth?: {
+    key?: string
+    secret?: string
+  }
 }
 
 export interface EndpointOptions extends Record<string, unknown> {
