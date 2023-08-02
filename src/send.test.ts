@@ -36,6 +36,7 @@ const emit = () => undefined
 // Tests -- action
 
 test('should send job with action and return status and data', async (t) => {
+  t.timeout(15000)
   const { queue, queueId } = t.context
   const connection = await connect({ queue, queueId }, null, null, emit)
   const expectedAction = {
@@ -58,6 +59,7 @@ test('should send job with action and return status and data', async (t) => {
 })
 
 test('should send job to queue with subQueueId', async (t) => {
+  t.timeout(15000)
   const { queue, queueId } = t.context
   const connection = await connect(
     { queue, queueId, subQueueId: `${queueId}_sub` },
@@ -82,6 +84,7 @@ test('should send job to queue with subQueueId', async (t) => {
 })
 
 test('should send job to queue with subQueueId from action meta', async (t) => {
+  t.timeout(15000)
   const { queue, queueId } = t.context
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
@@ -118,6 +121,7 @@ test('should send job to queue with subQueueId from action meta', async (t) => {
 })
 
 test('should use action id as job id', async (t) => {
+  t.timeout(15000)
   const { queue, queueId } = t.context
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
@@ -163,6 +167,7 @@ test('should return error when no connection', async (t) => {
 // Tests -- clean
 
 test('should clean waiting jobs with SERVICE action', async (t) => {
+  t.timeout(15000)
   const { queue, queueId } = t.context
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
@@ -181,6 +186,7 @@ test('should clean waiting jobs with SERVICE action', async (t) => {
 })
 
 test('should not clean waiting jobs newer than given ms with SERVICE action', async (t) => {
+  t.timeout(15000)
   const { queue, queueId } = t.context
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
@@ -199,6 +205,7 @@ test('should not clean waiting jobs newer than given ms with SERVICE action', as
 })
 
 test('should clean scheduled jobs with SERVICE action', async (t) => {
+  t.timeout(15000)
   const { queue, queueId } = t.context
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
@@ -217,6 +224,7 @@ test('should clean scheduled jobs with SERVICE action', async (t) => {
 })
 
 test('should clean completed jobs with SERVICE action', async (t) => {
+  t.timeout(15000)
   const { queue, queueId } = t.context
   const cleanSpy = sinon.spy(queue, 'clean')
   const connection = await connect({ queue, queueId }, null, null, emit)
@@ -235,6 +243,7 @@ test('should clean completed jobs with SERVICE action', async (t) => {
 })
 
 test('should clean completed jobs older than given ms with SERVICE action', async (t) => {
+  t.timeout(15000)
   const { queue, queueId } = t.context
   const cleanSpy = sinon.spy(queue, 'clean')
   const connection = await connect({ queue, queueId }, null, null, emit)
@@ -253,6 +262,7 @@ test('should clean completed jobs older than given ms with SERVICE action', asyn
 })
 
 test('should clean more job types with the same SERVICE action', async (t) => {
+  t.timeout(15000)
   const { queue, queueId } = t.context
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
