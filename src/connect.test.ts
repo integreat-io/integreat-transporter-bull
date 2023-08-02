@@ -257,7 +257,7 @@ test('should emit error from bull', async (t) => {
   await connect(options, null, null, emit)
   await wait(500)
 
-  t.true(emit.callCount > 0)
+  t.true(emit.callCount > 1)
   t.is(emit.args[1][0], 'error')
   const err = emit.args[1][1] as Error
   t.deepEqual(err.message, 'Bull error: getaddrinfo ENOTFOUND unknown.test')
