@@ -39,10 +39,10 @@
     "debug": "^4.3.4"
   },
   "devDependencies": {
-    "@integreat/ts-dev-setup": "^4.1.0",
-    "@types/sinon": "^10.0.15",
-    "integreat": "^0.8.1",
+    "@integreat/ts-dev-setup": "^4.1.1",
+    "@types/sinon": "^10.0.16",
+    "integreat": "^1.0.0-rc.1",
     "ioredis": "^5.3.2",
-    "sinon": "^15.1.2"
+    "sinon": "^15.2.0"
   }
 }
