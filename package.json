@@ -18,7 +18,7 @@
     "test:setup": "docker-compose up",
     "test:teardown": "docker-compose down",
     "test:watch": "npm run dev && exit 0",
-    "dev": "ava --watch",
+    "dev": "ava --watch || exit 0",
     "predev": "npm run pretest",
     "postdev": "npm run posttest",
     "build": "tsc",
