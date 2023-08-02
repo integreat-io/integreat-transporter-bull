@@ -24,24 +24,26 @@ const renameRedisOptions = ({
   typeof uri === 'string'
     ? { uri }
     : {
-        host,
-        port,
-        username: key,
-        password: secret,
-        ...(tls ? { tls: { host, port } } : {}),
-      }
+      host,
+      port,
+      username: key,
+      password: secret,
+      ...(tls ? { tls: { host, port } } : {}),
+    }
+
+const generateRedisOptions = (redis?: RedisOptions | string | null) =>
+  typeof redis === 'string'
+    ? { uri: redis }
+    : isObject(redis)
+      ? renameRedisOptions(redis)
+      : {}
 
 export function prepareRedisOptions(
   redis?: RedisOptions | string | null,
   auth?: Authentication | null
 ): IORedisOptions & { uri?: string } {
   const { key, secret } = auth || {}
-  const options =
-    typeof redis === 'string'
-      ? { uri: redis }
-      : isObject(redis)
-      ? renameRedisOptions(redis)
-      : {}
+  const options = generateRedisOptions(redis)
 
   return {
     enableReadyCheck: false,

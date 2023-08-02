@@ -58,20 +58,40 @@ async function push(
   }
 }
 
+async function sendActionToQueue(
+  action: Action,
+  queue: Queue,
+  options: JobOptions,
+  queueId?: string,
+  subQueueId?: string
+) {
+  try {
+    await queue.isReady() // Don't add job until queue is ready
+    const job = await push(queue, action, options, subQueueId)
+    debugLog(
+      `Added job '${job.id}' to queue ${queueId}': ${JSON.stringify(action)}`
+    )
+    return { status: 'ok', data: dataFromJob(job) }
+  } catch (error) {
+    debugLog(`Error sending to bull queue ${queueId}'. ${error}`)
+    return { status: 'error', error: `Sending to queue failed. ${error}` }
+  }
+}
+
 export default async function send(
   action: Action,
   connection: Connection | null
 ): Promise<Response<JobData>> {
-  const { queue, subQueueId } = connection || {}
+  const { queue, queueId, subQueueId } = connection || {}
   if (!queue) {
     debugLog(
-      `Cannot send action to bull queue '${connection?.queueId}': No queue`
+      `Cannot send action to bull queue '${queueId}': No queue`
     )
     return { status: 'error', error: 'Cannot send action to queue. No queue' }
   }
 
   if (action.type === 'SERVICE') {
-    debugLog(`SERVICE action sent to bull queue '${connection?.queueId}'`)
+    debugLog(`SERVICE action sent to bull queue '${queueId}'`)
     return runServiceAction(action, queue)
   }
 
@@ -80,17 +100,5 @@ export default async function send(
     options.jobId = action.meta.id
   }
 
-  try {
-    await queue.isReady() // Don't add job until queue is ready
-    const job = await push(queue, action, options, subQueueId)
-    debugLog(
-      `Added job '${job.id}' to queue ${connection?.queueId}': ${JSON.stringify(
-        action
-      )}`
-    )
-    return { status: 'ok', data: dataFromJob(job) }
-  } catch (error) {
-    debugLog(`Error sending to bull queue ${connection?.queueId}'. ${error}`)
-    return { status: 'error', error: `Sending to queue failed. ${error}` }
-  }
+  return await sendActionToQueue(action, queue, options, queueId, subQueueId)
 }
