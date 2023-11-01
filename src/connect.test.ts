@@ -169,13 +169,8 @@ test('should pass on bull advanced settings object', async (t) => {
       lockDuration: 12345,
     },
   }
-  const authentication = {
-    status: 'granted',
-    key: 'me',
-    secret: 's3cr3t',
-  }
 
-  const conn = await connect(options, authentication, null, emit)
+  const conn = await connect(options, null, null, emit)
 
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
