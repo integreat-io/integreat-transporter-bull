@@ -63,7 +63,7 @@ test('should send job to queue with subQueueId', async (t) => {
     { queue, queueId, subQueueId: `${queueId}_sub` },
     null,
     null,
-    emit
+    emit,
   )
 
   const ret = await send(action, connection)
@@ -115,6 +115,37 @@ test('should send job to queue with subQueueId from action meta', async (t) => {
     queueId: `${queueId}_sub`,
   }
   t.deepEqual(ret.data, expectedData)
+})
+
+test('should remove queue and auth from action meta', async (t) => {
+  const { queue, queueId } = t.context
+  const connection = await connect({ queue, queueId }, null, null, emit)
+  const action = {
+    type: 'SET',
+    payload: {
+      type: 'entry',
+      data: { id: 'ent1', title: 'Entry 1' },
+    },
+    meta: {
+      queue: true,
+      auth: { secret: 'cl4ss1f13d' },
+    },
+  }
+  const expectedAction = {
+    type: 'SET',
+    payload: {
+      type: 'entry',
+      data: { id: 'ent1', title: 'Entry 1' },
+    },
+    meta: {},
+  }
+
+  const ret = await send(action, connection)
+
+  t.is(ret.status, 'ok', ret.error)
+  const jobs = await queue.getWaiting()
+  t.is(jobs.length, 1)
+  t.deepEqual(jobs[0].data, expectedAction)
 })
 
 test('should use action id as job id', async (t) => {

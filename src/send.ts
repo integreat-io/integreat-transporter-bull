@@ -40,7 +40,7 @@ async function runServiceAction(action: Action, queue: Queue) {
 }
 
 const removeMetaProps = ({
-  meta: { options, authorized, subQueue, ...meta } = {},
+  meta: { options, authorized, subQueue, queue, auth, ...meta } = {},
   ...action
 }: Action) => ({ ...action, meta })
 
@@ -48,7 +48,7 @@ async function push(
   queue: Queue,
   action: Action,
   options: JobOptions,
-  subQueueId?: string
+  subQueueId?: string,
 ) {
   const queueId = action.meta?.subQueue || subQueueId
   if (typeof queueId === 'string') {
@@ -63,13 +63,13 @@ async function sendActionToQueue(
   queue: Queue,
   options: JobOptions,
   queueId?: string,
-  subQueueId?: string
+  subQueueId?: string,
 ) {
   try {
     await queue.isReady() // Don't add job until queue is ready
     const job = await push(queue, action, options, subQueueId)
     debugLog(
-      `Added job '${job.id}' to queue ${queueId}': ${JSON.stringify(action)}`
+      `Added job '${job.id}' to queue ${queueId}': ${JSON.stringify(action)}`,
     )
     return { status: 'ok', data: dataFromJob(job) }
   } catch (error) {
@@ -80,13 +80,11 @@ async function sendActionToQueue(
 
 export default async function send(
   action: Action,
-  connection: Connection | null
+  connection: Connection | null,
 ): Promise<Response<JobData>> {
   const { queue, queueId, subQueueId } = connection || {}
   if (!queue) {
-    debugLog(
-      `Cannot send action to bull queue '${queueId}': No queue`
-    )
+    debugLog(`Cannot send action to bull queue '${queueId}': No queue`)
     return { status: 'error', error: 'Cannot send action to queue. No queue' }
   }
 
