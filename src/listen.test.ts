@@ -128,7 +128,7 @@ test('should wrap non-action jobs in a REQUEST action and unwrap response', asyn
   t.deepEqual(processResponse, expectedQueueResponse)
 })
 
-test('should not override action id', async (t) => {
+test('should not touch action id', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
@@ -137,29 +137,29 @@ test('should not override action id', async (t) => {
     ...action,
     meta: { ...metaWithIdent, id: 'action1' },
   }
-  const expected = { status: 'ok' }
+  const expectedAction = actionWithId
 
   const ret = await listen(dispatch, connection, authenticate)
   const processFn = processStub.args[0][1] // Get the internal job handler
   await processFn({ data: actionWithId, id: 'job1' }) // Call internal handler to make sure it calls dispatch
 
-  t.deepEqual(ret, expected)
-  t.deepEqual(dispatch.args[0][0], actionWithId)
+  t.deepEqual(ret.status, 'ok', ret.error)
+  t.deepEqual(dispatch.args[0][0], expectedAction)
 })
 
-test('should not set action id when job is missing id', async (t) => {
+test('should not set action id when missing', async (t) => {
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
-  const expected = { status: 'ok' }
+  const expectedAction = { ...action, meta: metaWithIdent }
 
   const ret = await listen(dispatch, connection, authenticate)
   const processFn = processStub.args[0][1] // Get the internal job handler
-  await processFn({ data: action }) // Call internal handler to make sure it calls dispatch
+  await processFn({ data: action, id: 'job1' }) // Call internal handler to make sure it calls dispatch
 
-  t.deepEqual(ret, expected)
-  t.deepEqual(dispatch.args[0][0].meta, metaWithIdent)
+  t.deepEqual(ret.status, 'ok', ret.error)
+  t.deepEqual(dispatch.args[0][0], expectedAction)
 })
 
 test('should update job progress when handler function support it', async (t) => {
@@ -338,6 +338,6 @@ test('should throw when authenticating with Integreat fails', async (t) => {
   t.true(error instanceof Error)
   t.is(
     error?.message,
-    "Could not get authenticated ident from Integreat on queue 'great'. [noaccess] We could not grant you this wish"
+    "Could not get authenticated ident from Integreat on queue 'great'. [noaccess] We could not grant you this wish",
   )
 })

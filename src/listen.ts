@@ -37,7 +37,7 @@ function resolveCallbacks(
   dispatch: DispatchWithProgress | null,
   authenticate: AuthenticateExternal | null,
   queueId: string,
-  subQueueId?: string
+  subQueueId?: string,
 ): CallbackObject {
   if (
     (typeof dispatch !== 'function' || typeof authenticate !== 'function') &&
@@ -76,7 +76,7 @@ async function dispatchWithProgress(
   dispatch: DispatchWithProgress,
   authenticate: AuthenticateExternal,
   queueId: string,
-  job: Job
+  job: Job,
 ) {
   debugLog(`Getting authenticated ident for queue '${queueId}'`)
   const authResponse = await authenticate({ status: 'granted' }, action)
@@ -102,7 +102,7 @@ async function dispatchWithProgress(
 const handler = (
   dispatchFromHandler: DispatchWithProgress | null,
   queueId: string,
-  authenticateFromHandler: AuthenticateExternal | null
+  authenticateFromHandler: AuthenticateExternal | null,
 ) =>
   async function processJob(job: Job) {
     const { data, name } = job
@@ -111,7 +111,7 @@ const handler = (
       dispatchFromHandler,
       authenticateFromHandler,
       queueId,
-      name
+      name,
     )
     if (typeof dispatch !== 'function' || typeof authenticate !== 'function') {
       const errorReason = getHandlerErrorReason(queueId, name)
@@ -162,7 +162,7 @@ function storeHandlers(
 export default async function listen(
   dispatch: DispatchWithProgress,
   connection: Connection | null,
-  authenticate: AuthenticateExternal
+  authenticate: AuthenticateExternal,
 ): Promise<Response> {
   const {
     queue,
@@ -179,7 +179,12 @@ export default async function listen(
     // Start listening to queue
     if (subQueueId) {
       // We have a sub queue – let's store all dispatches and have a catch-all listener
-      const isFirstListenForQueue = storeHandlers(dispatch, authenticate, queueId, subQueueId)
+      const isFirstListenForQueue = storeHandlers(
+        dispatch,
+        authenticate,
+        queueId,
+        subQueueId,
+      )
       if (isFirstListenForQueue) {
         // Set up listener and create object for storing dispatches
         queue.process('*', maxConcurrency, handler(null, queueId, null))
