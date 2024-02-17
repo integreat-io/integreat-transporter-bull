@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "test": "c8 --reporter=text-summary ava --config ./ava-dist.config.cjs",
+    "test": "npm run build && c8 --reporter=text-summary ava --config ./ava-dist.config.cjs",
     "pretest": "docker-compose up --detach && wait-on --log --timeout 30000 tcp:localhost:6379",
     "posttest": "docker-compose down",
     "test:setup": "docker-compose up",
@@ -38,16 +38,17 @@
     "node": ">= 18"
   },
   "dependencies": {
-    "bull": "^4.11.5",
+    "bull": "^4.12.2",
     "debug": "^4.3.4"
   },
   "devDependencies": {
-    "@integreat/ts-dev-setup": "^5.0.3",
+    "@integreat/ts-dev-setup": "^6.0.1",
     "@types/debug": "^4.1.12",
-    "@types/sinon": "^17.0.1",
-    "integreat": "^1.4.4",
+    "@types/node": "^20.11.19",
+    "@types/sinon": "^17.0.3",
+    "integreat": "^1.5.7",
     "ioredis": "^5.3.2",
     "sinon": "^17.0.1",
-    "wait-on": "^7.1.0"
+    "wait-on": "^7.2.0"
   }
 }

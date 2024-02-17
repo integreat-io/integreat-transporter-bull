@@ -1,6 +1,8 @@
 module.exports = {
   extensions: { ts: 'module' },
-  nodeArguments: ['--loader=ts-node/esm', '--no-warnings'],
-  ignoredByWatcher: ['{coverage,dist,media,redisdata}/**', '**/*.md'],
+  nodeArguments: ['--import=tsimp'],
+  watchMode: {
+    ignoreChanges: ['{coverage,dist,media,redisdata,.tsimp}/**', '**/*.md'],
+  },
   files: ['src/**/*.test.ts'],
 }

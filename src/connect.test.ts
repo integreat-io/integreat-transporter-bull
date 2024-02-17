@@ -1,6 +1,7 @@
-import test from 'ava'
+import test, { registerCompletionHandler } from 'ava'
 import sinon from 'sinon'
 import Bull from 'bull'
+import disconnect from './disconnect.js'
 import type { Connection } from './types.js'
 
 import connect, { prepareRedisOptions } from './connect.js'
@@ -13,6 +14,12 @@ interface QueueWithInternals extends Bull.Queue {
 }
 
 // Setup
+
+// This function will force exit the process when the tests complete. We're
+// doing this because some services is kept alive when our tests finish.
+registerCompletionHandler(() => {
+  process.exit()
+})
 
 const emit = () => undefined
 
@@ -39,6 +46,8 @@ test('should connect to bull queue with redis url and default prefix', async (t)
   t.is((conn?.queue as QueueWithInternals).keyPrefix, 'bull')
   t.is(conn?.queue?.client.options.host, 'redis1.test')
   t.is(conn?.queue?.client.options.port, 6380)
+
+  await disconnect(conn)
 })
 
 test('should reuse queue for same queueId', async (t) => {
@@ -52,6 +61,9 @@ test('should reuse queue for same queueId', async (t) => {
 
   t.truthy(conn1?.queue)
   t.is(conn1?.queue, conn2?.queue)
+
+  await disconnect(conn1)
+  await disconnect(conn2)
 })
 
 test('should connect to bull queue with subQueueId', async (t) => {
@@ -72,6 +84,8 @@ test('should connect to bull queue with subQueueId', async (t) => {
   t.is((conn?.queue as QueueWithInternals).keyPrefix, 'bull')
   t.is(conn?.queue?.client.options.host, 'redis3.test')
   t.is(conn?.queue?.client.options.port, 6380)
+
+  await disconnect(conn)
 })
 
 test('should connect to bull queue with specified prefix', async (t) => {
@@ -91,6 +105,8 @@ test('should connect to bull queue with specified prefix', async (t) => {
   t.is((conn?.queue as QueueWithInternals).keyPrefix, 'something')
   t.is(conn?.queue?.client.options.host, 'redis4.test')
   t.is(conn?.queue?.client.options.port, 6380)
+
+  await disconnect(conn)
 })
 
 test('should connect to bull queue with redis options', async (t) => {
@@ -107,6 +123,8 @@ test('should connect to bull queue with redis options', async (t) => {
   t.is(conn?.queue?.name, 'ns5')
   t.is(conn?.queue?.client.options.host, 'redis5.test')
   t.is(conn?.queue?.client.options.port, 6382)
+
+  await disconnect(conn)
 })
 
 test('should connect to bull queue without options', async (t) => {
@@ -120,6 +138,8 @@ test('should connect to bull queue without options', async (t) => {
   t.is(conn?.queue?.name, 'ns6')
   t.is(conn?.queue?.client.options.host, '127.0.0.1')
   t.is(conn?.queue?.client.options.port, 6379)
+
+  await disconnect(conn)
 })
 
 test('should use provided bull queue as is', async (t) => {
@@ -132,6 +152,8 @@ test('should use provided bull queue as is', async (t) => {
   t.is(conn?.status, 'ok')
   t.truthy(conn?.queue)
   t.is(conn?.queue?.name, 'ns7_b')
+
+  await disconnect(conn)
 })
 
 test('should use default queueId when none is provided', async (t) => {
@@ -144,6 +166,8 @@ test('should use default queueId when none is provided', async (t) => {
   t.is(conn?.queueId, 'great')
   t.truthy(conn?.queue)
   t.is(conn?.queue?.name, 'great')
+
+  await disconnect(conn)
 })
 
 test('should pass on some options to connection object', async (t) => {
@@ -159,6 +183,8 @@ test('should pass on some options to connection object', async (t) => {
   t.is(conn?.queueId, 'ns8')
   t.is(conn?.subQueueId, 'internal')
   t.is(conn?.maxConcurrency, 5)
+
+  await disconnect(conn)
 })
 
 test('should pass on bull advanced settings object', async (t) => {
@@ -176,6 +202,8 @@ test('should pass on bull advanced settings object', async (t) => {
   t.is(conn?.status, 'ok')
   t.truthy(conn?.queue)
   t.is((conn?.queue as QueueWithInternals).settings.lockDuration, 12345)
+
+  await disconnect(conn)
 })
 
 test('should pass on auth object', async (t) => {
@@ -198,6 +226,8 @@ test('should pass on auth object', async (t) => {
   t.is(conn?.queue?.name, 'ns10')
   t.is(conn?.queue?.client.options.username, 'me')
   t.is(conn?.queue?.client.options.password, 's3cr3t')
+
+  await disconnect(conn)
 })
 
 test('should reuse connection if still connected', async (t) => {
@@ -210,6 +240,9 @@ test('should reuse connection if still connected', async (t) => {
   t.true(typeof conn2 === 'object' && conn2 !== null)
   t.is(conn2?.status, 'ok')
   t.is(conn2?.queueId, 'ns11')
+
+  await disconnect(conn1)
+  await disconnect(conn2)
 })
 
 test('should create new connection when given one is closed', async (t) => {
@@ -229,6 +262,9 @@ test('should create new connection when given one is closed', async (t) => {
   t.true(typeof conn2 === 'object' && conn2 !== null)
   t.is(conn2?.status, 'ok')
   t.is(conn2?.queueId, 'ns14')
+
+  await disconnect(conn1)
+  await disconnect(conn2)
 })
 
 test('should create new connection if given one has an error', async (t) => {
@@ -240,6 +276,8 @@ test('should create new connection if given one has an error', async (t) => {
   t.true(typeof conn === 'object' && conn !== null)
   t.is(conn?.status, 'ok')
   t.is(conn?.queueId, 'ns15')
+
+  await disconnect(conn)
 })
 
 test('should emit error from bull', async (t) => {
@@ -249,13 +287,15 @@ test('should emit error from bull', async (t) => {
     redis: 'http://unknown.test:9999',
   }
 
-  await connect(options, null, null, emit)
-  await wait(500)
+  const conn = await connect(options, null, null, emit)
+  await wait(1000)
 
   t.true(emit.callCount > 1)
   t.is(emit.args[1][0], 'error')
   const err = emit.args[1][1] as Error
   t.deepEqual(err.message, 'Bull error: getaddrinfo ENOTFOUND unknown.test')
+
+  await disconnect(conn)
 })
 
 // Tests -- redis options

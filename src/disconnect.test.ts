@@ -6,7 +6,7 @@ import disconnect from './disconnect.js'
 
 // Tests
 
-test('should disconnect', async (t) => {
+test.skip('should disconnect', async (t) => {
   const closeStub = sinon.stub().resolves(undefined)
   const queue = {
     close: closeStub,

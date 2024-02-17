@@ -24,12 +24,12 @@ const renameRedisOptions = ({
   typeof uri === 'string'
     ? { uri }
     : {
-      host,
-      port,
-      username: key,
-      password: secret,
-      ...(tls ? { tls: { host, port } } : {}),
-    }
+        host,
+        port,
+        username: key,
+        password: secret,
+        ...(tls ? { tls: { host, port } } : {}),
+      }
 
 const generateRedisOptions = (redis?: RedisOptions | string | null) =>
   typeof redis === 'string'
@@ -40,7 +40,7 @@ const generateRedisOptions = (redis?: RedisOptions | string | null) =>
 
 export function prepareRedisOptions(
   redis?: RedisOptions | string | null,
-  auth?: Authentication | null
+  auth?: Authentication | null,
 ): IORedisOptions & { uri?: string } {
   const { key, secret } = auth || {}
   const options = generateRedisOptions(redis)
@@ -59,7 +59,7 @@ function createQueue(
   redis?: string | RedisOptions | null,
   authentication?: Authentication | null,
   prefix = 'bull',
-  settings = {}
+  settings = {},
 ) {
   const { uri, ...redisOptions } = prepareRedisOptions(redis, authentication)
   const options: QueueOptions = {
@@ -88,7 +88,7 @@ export default async function (
   }: EndpointOptions,
   authentication: Record<string, unknown> | null,
   connection: Connection | null,
-  emit: (eventType: string, ...args: unknown[]) => void
+  emit: (eventType: string, ...args: unknown[]) => void,
 ): Promise<Connection | null> {
   if (
     isObject(connection) &&
@@ -110,7 +110,7 @@ export default async function (
 
     // Listen to errors from queue
     queue.on('error', (error) =>
-      emit('error', new Error(`Bull error: ${error.message}`))
+      emit('error', new Error(`Bull error: ${error.message}`)),
     )
   }
 
