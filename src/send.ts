@@ -69,7 +69,7 @@ async function sendActionToQueue(
     await queue.isReady() // Don't add job until queue is ready
     const job = await push(queue, action, options, subQueueId)
     debugLog(
-      `Added job '${job.id}' to queue ${queueId}': ${JSON.stringify(action)}`,
+      `Added job '${job.id}' to queue ${queueId}' with options ${options}: ${JSON.stringify(action)}`,
     )
     return { status: 'ok', data: dataFromJob(job) }
   } catch (error) {
