@@ -88,6 +88,17 @@ The available properties for the `redis` options object are as follow:
 
 You may choose to set the `uri` or specify the individual properties.
 
+### Dispatching an action to the queue
+
+When an action is dispatched in Integreat, in a setup with a queue, any action
+with `meta.queue` set to `true` will be passed to the queue. When an action is
+pulled from the queue, it is again dispatched to the queue service, if it is
+listening.
+
+`meta.queue` may also be a Unix timestamp (millieseconds since epoc, aka
+1970-01-01), in which case the action will be delayed until the timestamp is
+reached, and then dispatched as normal.
+
 ### Debugging
 
 Run Integreat with env variable `DEBUG=integreat:transporter:bull`, to receive

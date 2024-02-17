@@ -97,6 +97,9 @@ export default async function send(
   if (action.meta?.id) {
     options.jobId = action.meta.id
   }
+  if (typeof action.meta?.queue === 'number') {
+    options.delay = action.meta.queue - Date.now()
+  }
 
   return await sendActionToQueue(action, queue, options, queueId, subQueueId)
 }

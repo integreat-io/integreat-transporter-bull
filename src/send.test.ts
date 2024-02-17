@@ -1,9 +1,13 @@
 import ava, { TestFn } from 'ava'
 import sinon from 'sinon'
-import Bull from 'bull'
+import Bull, { Job } from 'bull'
 import connect from './connect.js'
 
 import send from './send.js'
+
+interface JobWithDelay extends Job {
+  delay: number
+}
 
 // Setup
 
@@ -55,6 +59,35 @@ test('should send job with action and return status and data', async (t) => {
     queueId: jobs[0].name,
   }
   t.deepEqual(ret.data, expectedData)
+})
+
+test('should send job with action at the time specified by a numeric meta.queue', async (t) => {
+  const { queue, queueId } = t.context
+  const connection = await connect({ queue, queueId }, null, null, emit)
+  const actionWithDelay = {
+    ...action,
+    meta: { ...action.meta, queue: Date.now() + 60000 },
+  }
+  const expectedAction = {
+    type: 'SET',
+    payload: { type: 'entry', data: { id: 'ent1', title: 'Entry 1' } },
+    meta: {},
+  }
+
+  const ret = await send(actionWithDelay, connection)
+
+  t.is(ret.status, 'ok', ret.error)
+  const jobs = await queue.getDelayed()
+  t.is(jobs.length, 1)
+  t.deepEqual(jobs[0].data, expectedAction)
+  const delay = (jobs[0] as JobWithDelay).delay
+  t.is(typeof delay, 'number')
+  t.true(
+    delay > 59000 && delay <= 60000,
+    `Delay was expected to be close to 60000, but was ${delay}`,
+  )
+  const jobsWaiting = await queue.getWaiting()
+  t.is(jobsWaiting.length, 0)
 })
 
 test('should send job to queue with subQueueId', async (t) => {
