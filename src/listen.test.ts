@@ -1,10 +1,13 @@
 import test from 'ava'
 import sinon from 'sinon'
+import type { Dispatch } from 'integreat'
 import type { Queue } from 'bull'
+import type { QueueListeners } from './types.js'
 
 import listen from './listen.js'
 
 // Setup
+
 const action = {
   type: 'SET',
   payload: { type: 'entry', data: { id: 'ent1', title: 'Entry 1' } },
@@ -12,7 +15,10 @@ const action = {
 }
 const metaWithIdent = { ident: { id: 'userFromIntegreat' } }
 
-const dispatch = async () => ({ status: 'ok', data: [] })
+const dispatch = (async () => ({
+  status: 'ok',
+  data: [],
+})) as unknown as Dispatch // We don't mind this function not returning a PPromise
 const authenticate = async () => ({
   status: 'ok',
   access: { ident: { id: 'userFromIntegreat' } },
@@ -21,6 +27,7 @@ const authenticate = async () => ({
 // Tests
 
 test('should listen to queue and dispatch action, authenticating with Integreat', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
@@ -33,8 +40,12 @@ test('should listen to queue and dispatch action, authenticating with Integreat'
   const expectedAuthentication = { status: 'granted' }
   const expectedQueueResponse = { status: 'ok', data: [] }
 
-  const listenResponse = await listen(dispatch, connection, authenticate)
-  const processFn = processStub.args[0][1] // Get the internal job handler
+  const listenResponse = await listen(listeners)(
+    dispatch,
+    connection,
+    authenticate,
+  )
+  const processFn = processStub.args[0][2] // Get the internal job handler
   const processResponse = await processFn({ data: action, id: 'job1' }) // Call internal handler to make sure it calls dispatch
 
   t.deepEqual(listenResponse, expected)
@@ -43,11 +54,13 @@ test('should listen to queue and dispatch action, authenticating with Integreat'
   t.deepEqual(authenticate.args[0][1], action)
   t.is(dispatch.callCount, 1)
   t.deepEqual(dispatch.args[0][0], expectedAction)
-  t.is(processStub.args[0][0], 1) // Default max concurrency
+  t.is(processStub.args[0][0], '*')
+  t.is(processStub.args[0][1], 1) // Default max concurrency
   t.deepEqual(processResponse, expectedQueueResponse)
 })
 
 test('should listen to subQueueId', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection1 = {
@@ -78,8 +91,16 @@ test('should listen to subQueueId', async (t) => {
   const expectedAuthentication = { status: 'granted' }
   const expectedQueueResponse = { status: 'ok', data: [] }
 
-  const listenResponse1 = await listen(dispatch1, connection1, authenticate1)
-  const listenResponse2 = await listen(dispatch2, connection2, authenticate2)
+  const listenResponse1 = await listen(listeners)(
+    dispatch1,
+    connection1,
+    authenticate1,
+  )
+  const listenResponse2 = await listen(listeners)(
+    dispatch2,
+    connection2,
+    authenticate2,
+  )
 
   const processFn = processStub.args[0][2] // Get the internal job handler
   const processResponse = await processFn({
@@ -104,6 +125,7 @@ test('should listen to subQueueId', async (t) => {
 })
 
 test('should wrap non-action jobs in a REQUEST action and unwrap response', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
@@ -118,8 +140,12 @@ test('should wrap non-action jobs in a REQUEST action and unwrap response', asyn
   }
   const expectedQueueResponse = { ok: true, context: {} }
 
-  const listenResponse = await listen(dispatch, connection, authenticate)
-  const processFn = processStub.args[0][1] // Get the internal job handler
+  const listenResponse = await listen(listeners)(
+    dispatch,
+    connection,
+    authenticate,
+  )
+  const processFn = processStub.args[0][2] // Get the internal job handler
   const processResponse = await processFn({ data: job, id: 'job2' }) // Call internal handler to make sure it calls dispatch
 
   t.deepEqual(listenResponse.status, 'ok')
@@ -129,6 +155,7 @@ test('should wrap non-action jobs in a REQUEST action and unwrap response', asyn
 })
 
 test('should not touch action id', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
@@ -139,8 +166,8 @@ test('should not touch action id', async (t) => {
   }
   const expectedAction = actionWithId
 
-  const ret = await listen(dispatch, connection, authenticate)
-  const processFn = processStub.args[0][1] // Get the internal job handler
+  const ret = await listen(listeners)(dispatch, connection, authenticate)
+  const processFn = processStub.args[0][2] // Get the internal job handler
   await processFn({ data: actionWithId, id: 'job1' }) // Call internal handler to make sure it calls dispatch
 
   t.deepEqual(ret.status, 'ok', ret.error)
@@ -148,14 +175,15 @@ test('should not touch action id', async (t) => {
 })
 
 test('should not set action id when missing', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
   const expectedAction = { ...action, meta: metaWithIdent }
 
-  const ret = await listen(dispatch, connection, authenticate)
-  const processFn = processStub.args[0][1] // Get the internal job handler
+  const ret = await listen(listeners)(dispatch, connection, authenticate)
+  const processFn = processStub.args[0][2] // Get the internal job handler
   await processFn({ data: action, id: 'job1' }) // Call internal handler to make sure it calls dispatch
 
   t.deepEqual(ret.status, 'ok', ret.error)
@@ -163,6 +191,7 @@ test('should not set action id when missing', async (t) => {
 })
 
 test('should update job progress when handler function support it', async (t) => {
+  const listeners: QueueListeners = new Map()
   const progressStub = sinon.stub().resolves(undefined)
   const processStub = sinon.stub()
   const onProgressStub = sinon.stub()
@@ -181,8 +210,12 @@ test('should update job progress when handler function support it', async (t) =>
   const expectedQueueResponse = { status: 'ok', data: [] }
   const bullJob = { data: action, id: 'job1', progress: progressStub }
 
-  const listenResponse = await listen(dispatch, connection, authenticate)
-  const processFn = processStub.args[0][1] // Get the internal job handler
+  const listenResponse = await listen(listeners)(
+    dispatch,
+    connection,
+    authenticate,
+  )
+  const processFn = processStub.args[0][2] // Get the internal job handler
   const processResponse = await processFn(bullJob) // Call internal handler to make sure it calls dispatch
   t.is(onProgressStub.callCount, 1)
   const progressFn = onProgressStub.args[0][0]
@@ -193,11 +226,13 @@ test('should update job progress when handler function support it', async (t) =>
   t.deepEqual(listenResponse, expected)
   t.is(dispatch.callCount, 1)
   t.deepEqual(dispatch.args[0][0], expectedAction)
-  t.deepEqual(processStub.args[0][0], 1) // Default max concurrency
+  t.deepEqual(processStub.args[0][0], '*')
+  t.deepEqual(processStub.args[0][1], 1) // Default max concurrency
   t.deepEqual(processResponse, expectedQueueResponse)
 })
 
 test('should reject when action response is error', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
@@ -206,8 +241,8 @@ test('should reject when action response is error', async (t) => {
     .resolves({ status: 'notfound', error: 'Where?' })
   const expected = { status: 'ok' }
 
-  const ret = await listen(dispatch, connection, authenticate)
-  const processFn = processStub.args[0][1] // Get the internal job handler
+  const ret = await listen(listeners)(dispatch, connection, authenticate)
+  const processFn = processStub.args[0][2] // Get the internal job handler
   const err = await t.throwsAsync(processFn({ data: action })) // Call internal handler to make sure it calls dispatch
 
   t.is(err?.message, '[notfound] Where?')
@@ -215,6 +250,7 @@ test('should reject when action response is error', async (t) => {
 })
 
 test('should not reject when action response is noaction', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
@@ -223,36 +259,38 @@ test('should not reject when action response is noaction', async (t) => {
     .resolves({ status: 'noaction', error: 'Nothing to do' })
   const expected = { status: 'ok' }
 
-  const ret = await listen(dispatch, connection, authenticate)
-  const processFn = processStub.args[0][1] // Get the internal job handler
+  const ret = await listen(listeners)(dispatch, connection, authenticate)
+  const processFn = processStub.args[0][2] // Get the internal job handler
   await t.notThrowsAsync(processFn({ data: action })) // Call internal handler to make sure it calls dispatch
 
   t.deepEqual(ret, expected)
 })
 
 test('should not reject when action response is queued', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon.stub().resolves({ status: 'queued' })
   const expected = { status: 'ok' }
 
-  const ret = await listen(dispatch, connection, authenticate)
-  const processFn = processStub.args[0][1] // Get the internal job handler
+  const ret = await listen(listeners)(dispatch, connection, authenticate)
+  const processFn = processStub.args[0][2] // Get the internal job handler
   await t.notThrowsAsync(processFn({ data: action })) // Call internal handler to make sure it calls dispatch
 
   t.deepEqual(ret, expected)
 })
 
 test('should reject when response is not a valid response', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
   const dispatch = sinon.stub().resolves(null)
   const expected = { status: 'ok' }
 
-  const ret = await listen(dispatch, connection, authenticate)
-  const processFn = processStub.args[0][1] // Get the internal job handler
+  const ret = await listen(listeners)(dispatch, connection, authenticate)
+  const processFn = processStub.args[0][2] // Get the internal job handler
   const err = await t.throwsAsync(processFn({ data: action })) // Call internal handler to make sure it calls dispatch
 
   t.is(err?.message, 'Queued action did not return a valid response')
@@ -260,6 +298,7 @@ test('should reject when response is not a valid response', async (t) => {
 })
 
 test('should call process with max concurrency', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub()
   const queue = {
     process: processStub,
@@ -274,14 +313,16 @@ test('should call process with max concurrency', async (t) => {
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
   const expected = { status: 'ok' }
 
-  const ret = await listen(dispatch, connection, authenticate)
+  const ret = await listen(listeners)(dispatch, connection, authenticate)
 
   t.deepEqual(ret, expected)
   t.is(processStub.callCount, 1)
-  t.deepEqual(processStub.args[0][0], 5)
+  t.deepEqual(processStub.args[0][0], '*')
+  t.deepEqual(processStub.args[0][1], 5)
 })
 
 test('should return error when listening fails', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub().throws(new Error('Will not listen'))
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
@@ -290,36 +331,39 @@ test('should return error when listening fails', async (t) => {
     error: 'Cannot listen to queue. Error: Will not listen',
   }
 
-  const ret = await listen(dispatch, connection, authenticate)
+  const ret = await listen(listeners)(dispatch, connection, authenticate)
 
   t.deepEqual(ret, expected)
 })
 
 test('should return error when no queue', async (t) => {
+  const listeners: QueueListeners = new Map()
   const connection = { status: 'ok', queue: undefined, queueId: 'great' }
   const expected = {
     status: 'error',
     error: 'Cannot listen to queue. No queue',
   }
 
-  const ret = await listen(dispatch, connection, authenticate)
+  const ret = await listen(listeners)(dispatch, connection, authenticate)
 
   t.deepEqual(ret, expected)
 })
 
 test('should return error when no connection', async (t) => {
+  const listeners: QueueListeners = new Map()
   const connection = null
   const expected = {
     status: 'error',
     error: 'Cannot listen to queue. No queue',
   }
 
-  const ret = await listen(dispatch, connection, authenticate)
+  const ret = await listen(listeners)(dispatch, connection, authenticate)
 
   t.deepEqual(ret, expected)
 })
 
 test('should throw when authenticating with Integreat fails', async (t) => {
+  const listeners: QueueListeners = new Map()
   const processStub = sinon.stub()
   const queue = { process: processStub } as unknown as Queue
   const connection = { status: 'ok', queue, queueId: 'great' }
@@ -328,8 +372,12 @@ test('should throw when authenticating with Integreat fails', async (t) => {
     .stub()
     .resolves({ status: 'noaccess', error: 'We could not grant you this wish' })
 
-  const listenResponse = await listen(dispatch, connection, authenticate)
-  const processFn = processStub.args[0][1] // Get the internal job handler
+  const listenResponse = await listen(listeners)(
+    dispatch,
+    connection,
+    authenticate,
+  )
+  const processFn = processStub.args[0][2] // Get the internal job handler
   const error = await t.throwsAsync(processFn({ data: action, id: 'job1' })) // Call internal handler to make sure it throws
 
   t.is(listenResponse.status, 'ok')

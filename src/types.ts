@@ -1,4 +1,8 @@
-import { Connection as ConnectionBase } from 'integreat'
+import type {
+  Dispatch,
+  AuthenticateExternal,
+  Connection as ConnectionBase,
+} from 'integreat'
 import type { JobId, Queue, AdvancedSettings } from 'bull'
 
 export interface RedisOptions {
@@ -39,3 +43,14 @@ export interface JobData {
   timestamp: number
   queueId: string
 }
+
+export interface PromiseWithProgress<T> extends Promise<T> {
+  onProgress?: (cb: (progress?: number) => void) => void
+}
+
+export interface QueueListener {
+  dispatch: Dispatch | null
+  authenticate: AuthenticateExternal | null
+}
+
+export type QueueListeners = Map<string, Map<string, QueueListener>>
