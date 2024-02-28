@@ -1,4 +1,3 @@
-/* eslint-disable security/detect-object-injection */
 import Bull, { QueueOptions } from 'bull'
 import { RedisOptions as IORedisOptions } from 'ioredis'
 import debug from 'debug'
@@ -8,11 +7,10 @@ import type {
   EndpointOptions,
   RedisOptions,
   Authentication,
+  ActiveQueue,
 } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
-
-const queues: Record<string, Bull.Queue> = {}
 
 const renameRedisOptions = ({
   uri,
@@ -76,49 +74,57 @@ function createQueue(
 // is closed. Is this the best we have?
 const isDisconnected = (queue?: Bull.Queue) => queue?.client.status === 'end'
 
-export default async function (
-  {
-    redis,
-    queueId = 'great',
-    subQueueId,
-    queue: queueFromOptions,
-    keyPrefix,
-    bullSettings,
-    maxConcurrency,
-  }: EndpointOptions,
-  authentication: Record<string, unknown> | null,
-  connection: Connection | null,
-  emit: (eventType: string, ...args: unknown[]) => void,
-): Promise<Connection | null> {
-  if (
-    isObject(connection) &&
-    connection.status === 'ok' &&
-    !isDisconnected(connection.queue)
-  ) {
-    debugLog(`Reusing bull queue '${connection.queueId}'`)
-    return connection
+export default (queues: Map<string, ActiveQueue>) =>
+  async function (
+    {
+      redis,
+      queueId = 'great',
+      subQueueId,
+      queue: queueFromOptions,
+      keyPrefix,
+      bullSettings,
+      maxConcurrency,
+    }: EndpointOptions,
+    authentication: Record<string, unknown> | null,
+    connection: Connection | null,
+    emit: (eventType: string, ...args: unknown[]) => void,
+  ): Promise<Connection | null> {
+    if (
+      isObject(connection) &&
+      connection.status === 'ok' &&
+      !isDisconnected(connection.queue)
+    ) {
+      debugLog(`Reusing bull queue '${connection.queueId}'`)
+      return connection
+    }
+
+    let queue = queues.get(queueId)?.queue ?? queueFromOptions
+
+    if (!queue) {
+      queue = createQueue(
+        queueId,
+        redis,
+        authentication,
+        keyPrefix,
+        bullSettings,
+      )
+      debugLog(`Created bull queue '${queueId}'`)
+
+      // Cache queue for reuse
+      const activeQueue = { queue, listeners: new Map() }
+      queues.set(queueId, activeQueue)
+
+      // Listen to errors from queue
+      queue.on('error', (error) =>
+        emit('error', new Error(`Bull error: ${error.message}`)),
+      )
+    }
+
+    return {
+      status: 'ok',
+      queue,
+      queueId,
+      subQueueId,
+      maxConcurrency,
+    }
   }
-
-  let queue = queues[queueId] ?? queueFromOptions
-
-  if (!queue) {
-    queue = createQueue(queueId, redis, authentication, keyPrefix, bullSettings)
-    debugLog(`Created bull queue '${queueId}'`)
-
-    // Cache queue for reuse
-    queues[queueId] = queue
-
-    // Listen to errors from queue
-    queue.on('error', (error) =>
-      emit('error', new Error(`Bull error: ${error.message}`)),
-    )
-  }
-
-  return {
-    status: 'ok',
-    queue,
-    queueId,
-    subQueueId,
-    maxConcurrency,
-  }
-}

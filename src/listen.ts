@@ -8,7 +8,7 @@ import type {
   AuthenticateExternal,
 } from 'integreat'
 import type { Job } from 'bull'
-import type { Connection, QueueListeners, QueueListener } from './types.js'
+import type { Connection, ActiveQueue, QueueListener } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
 const OK_STATUSES = ['ok', 'noaction', 'queued']
@@ -24,18 +24,18 @@ const setIdentOnAction = (action: Action, ident: Ident): Action => ({
 })
 
 const getListener = (
-  listeners: QueueListeners,
+  queues: Map<string, ActiveQueue>,
   queueId: string,
   subQueueId: string, // Will be '*' when no sub queue
-): QueueListener | undefined => listeners.get(queueId)?.get(subQueueId)
+): QueueListener | undefined => queues.get(queueId)?.listeners.get(subQueueId)
 
 const getHandlerErrorReason = (
-  listeners: QueueListeners,
+  queues: Map<string, ActiveQueue>,
   queueId: string,
   name?: string,
 ) =>
-  !queueId || listeners.get(queueId)
-    ? !queueId || !name || listeners.get(queueId)?.get(name)
+  !queueId || queues.get(queueId)
+    ? !queueId || !name || queues.get(queueId)?.listeners.get(name)
       ? '`dispatch()` and `authenticate()` must be functions'
       : `No queue named '${queueId}:${name}`
     : `No queue named '${queueId}`
@@ -83,15 +83,15 @@ async function dispatchWithProgress(
 const subQueueIdFromName = (name?: string) =>
   name === '__default__' || name === undefined ? '*' : name
 
-const createHandler = (queueId: string, listeners: QueueListeners) =>
+const createHandler = (queueId: string, queues: Map<string, ActiveQueue>) =>
   async function processJob(job: Job) {
     const { data, name } = job
     const subQueueId = subQueueIdFromName(name)
 
     const { dispatch, authenticate } =
-      getListener(listeners, queueId, subQueueId) || {}
+      getListener(queues, queueId, subQueueId) || {}
     if (typeof dispatch !== 'function' || typeof authenticate !== 'function') {
-      const errorReason = getHandlerErrorReason(listeners, queueId, subQueueId)
+      const errorReason = getHandlerErrorReason(queues, queueId, subQueueId)
       debugLog(`Could not handle action from queue. ${errorReason}`)
       throw new Error(`Could not handle action from queue. ${errorReason}`)
     }
@@ -119,28 +119,25 @@ const createHandler = (queueId: string, listeners: QueueListeners) =>
   }
 
 function storeListener(
-  listeners: QueueListeners,
+  queues: Map<string, ActiveQueue>,
   dispatch: Dispatch,
   authenticate: AuthenticateExternal,
   queueId: string,
   subQueueId: string,
 ) {
-  let ourListeners = listeners.get(queueId)
-  let isFirstListenForQueue = false
+  const ourListeners = queues.get(queueId)?.listeners
   if (!ourListeners) {
-    ourListeners = new Map()
-    listeners.set(queueId, ourListeners)
-    isFirstListenForQueue = true
+    throw new Error('Please connect to the queue before listening')
   }
-
-  ourListeners.set(subQueueId, { dispatch, authenticate })
+  const isFirstListenForQueue = ourListeners?.size === 0
+  ourListeners?.set(subQueueId, { dispatch, authenticate })
   return isFirstListenForQueue
 }
 
 /**
  * Listen to queue and dispatch jobs as actions to Integreat.
  */
-export default (listeners: QueueListeners) =>
+export default (queues: Map<string, ActiveQueue>) =>
   async function listen(
     dispatch: Dispatch,
     connection: Connection | null,
@@ -160,7 +157,7 @@ export default (listeners: QueueListeners) =>
     try {
       // Start listening to queue
       const isFirstListenForQueue = storeListener(
-        listeners,
+        queues,
         dispatch,
         authenticate,
         queueId,
@@ -168,13 +165,15 @@ export default (listeners: QueueListeners) =>
       )
       if (isFirstListenForQueue) {
         // Set up listener and create object for storing dispatches
-        queue.process('*', maxConcurrency, createHandler(queueId, listeners))
+        queue.process('*', maxConcurrency, createHandler(queueId, queues))
+        // TODO: Set a flag on the active queue that we're listening
       }
       debugLog(`Listening to queue '${queueId}' for sub queue '${subQueueId}'`)
 
       return { status: 'ok' }
     } catch (error) {
-      debugLog(`Cannot listen to queue '${queueId}'. ${error}`)
-      return { status: 'error', error: `Cannot listen to queue. ${error}` }
+      const errorMessage = `Cannot listen to queue '${queueId}'. ${error instanceof Error ? error.message : String(error)}`
+      debugLog(errorMessage)
+      return { status: 'error', error: errorMessage }
     }
   }

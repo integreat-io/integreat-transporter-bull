@@ -3,12 +3,12 @@ import disconnect from './disconnect.js'
 import send from './send.js'
 import listen from './listen.js'
 import type { Transporter } from 'integreat'
-import type { QueueListeners } from './types.js'
+import type { ActiveQueue } from './types.js'
 
 // We keep all listeners in a global Map to make sure we only create one
 // listener for each queue. A listener will handle jobs from the queue itself
 // and any sub queues.
-const queueListeners: QueueListeners = new Map()
+const queues = new Map<string, ActiveQueue>()
 
 /**
  * Bull Queue Transporter for Integreat
@@ -18,15 +18,15 @@ const bullTransporter: Transporter = {
 
   prepareOptions: (options, _serviceId) => options,
 
-  connect,
+  connect: connect(queues),
 
   send,
 
   shouldListen: (options) => options.dontListen !== true,
 
-  listen: listen(queueListeners),
+  listen: listen(queues),
 
-  disconnect,
+  disconnect: disconnect(queues),
 }
 
 export default bullTransporter

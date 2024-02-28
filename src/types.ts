@@ -53,4 +53,7 @@ export interface QueueListener {
   authenticate: AuthenticateExternal | null
 }
 
-export type QueueListeners = Map<string, Map<string, QueueListener>>
+export interface ActiveQueue {
+  queue: Queue
+  listeners: Map<string, QueueListener>
+}
