@@ -2,6 +2,7 @@ import connect from './connect.js'
 import disconnect from './disconnect.js'
 import send from './send.js'
 import listen from './listen.js'
+import stopListening from './stopListening.js'
 import type { Transporter } from 'integreat'
 import type { ActiveQueue } from './types.js'
 
@@ -25,6 +26,8 @@ const bullTransporter: Transporter = {
   shouldListen: (options) => options.dontListen !== true,
 
   listen: listen(queues),
+
+  stopListening: stopListening(queues),
 
   disconnect: disconnect(queues),
 }

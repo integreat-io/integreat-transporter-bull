@@ -10,6 +10,7 @@ test('should be a transporter', (t) => {
   t.is(typeof transporter.connect, 'function')
   t.is(typeof transporter.send, 'function')
   t.is(typeof transporter.listen, 'function')
+  t.is(typeof transporter.stopListening, 'function')
   t.is(typeof transporter.disconnect, 'function')
 })
 

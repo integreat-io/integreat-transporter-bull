@@ -1,5 +1,6 @@
 import test from 'ava'
 import sinon from 'sinon'
+import stopListening from './stopListening.js'
 import type { Dispatch } from 'integreat'
 import type { Queue } from 'bull'
 import type { ActiveQueue } from './types.js'
@@ -131,8 +132,7 @@ test('should listen to subQueueId', async (t) => {
   t.deepEqual(listenResponse2, expected)
 })
 
-// TODO: Fix this test when we have implemented `stopListening()`
-test.skip('should not register handler twice', async (t) => {
+test.failing('should not register handler twice', async (t) => {
   const processStub = sinon.stub()
   const queue = {
     process: processStub,
@@ -143,7 +143,7 @@ test.skip('should not register handler twice', async (t) => {
   const queues = createQueues(queue)
 
   await listen(queues)(dispatch, connection, authenticate)
-  // await stopListening(queues)(connection)
+  await stopListening(queues)(connection)
   const listenResponse = await listen(queues)(
     dispatch,
     connection,

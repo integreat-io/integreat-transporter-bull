@@ -55,9 +55,14 @@ test.serial(
       null,
       emit,
     )
-    const ret = await transporter.listen!(dispatch, connection, authenticate)
+    const ret = await transporter.listen!(
+      dispatch,
+      connection,
+      authenticate,
+      emit,
+    )
     await queue.add(action)
-    await new Promise((resolve) => setTimeout(resolve, 1000, undefined))
+    await new Promise((resolve) => setTimeout(resolve, 500, undefined))
     await transporter.disconnect(connection)
 
     t.is(ret.status, 'ok', ret.error)
@@ -85,9 +90,14 @@ test.serial(
       null,
       emit,
     )
-    const ret = await transporter.listen!(dispatch, connection, authenticate)
+    const ret = await transporter.listen!(
+      dispatch,
+      connection,
+      authenticate,
+      emit,
+    )
     await queue.add('sub1', action)
-    await new Promise((resolve) => setTimeout(resolve, 1000, undefined))
+    await new Promise((resolve) => setTimeout(resolve, 500, undefined))
     await transporter.disconnect(connection)
 
     t.is(ret.status, 'ok', ret.error)
@@ -95,3 +105,34 @@ test.serial(
     t.deepEqual(dispatch.args[0][0], expectedAction)
   },
 )
+
+test.serial('shoulden not dispatch after we stop listening', async (t) => {
+  const queue = t.context.queue
+  const options = {
+    queueId: 'testQueue1',
+    subQueueId: 'sub2',
+    redis: redisUrl,
+  }
+  const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
+
+  const preparedOptions = transporter.prepareOptions(options, 'queue')
+  const connection = await transporter.connect(
+    preparedOptions,
+    null,
+    null,
+    emit,
+  )
+  const ret = await transporter.listen!(
+    dispatch,
+    connection,
+    authenticate,
+    emit,
+  )
+  await transporter.stopListening!(connection)
+  await queue.add('sub2', action)
+  await new Promise((resolve) => setTimeout(resolve, 500, undefined))
+  await transporter.disconnect(connection)
+
+  t.is(ret.status, 'ok', ret.error)
+  t.is(dispatch.callCount, 0)
+})
