@@ -56,4 +56,5 @@ export interface QueueListener {
 export interface ActiveQueue {
   queue: Queue
   listeners: Map<string, QueueListener>
+  isListening: boolean
 }

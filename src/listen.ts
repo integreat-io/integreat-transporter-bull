@@ -125,12 +125,14 @@ function storeListener(
   queueId: string,
   subQueueId: string,
 ) {
-  const ourListeners = queues.get(queueId)?.listeners
-  if (!ourListeners) {
+  const queue = queues.get(queueId)
+  if (!queue) {
     throw new Error('Please connect to the queue before listening')
   }
-  const isFirstListenForQueue = ourListeners?.size === 0
+  const ourListeners = queue.listeners
+  const isFirstListenForQueue = ourListeners?.size === 0 && !queue.isListening
   ourListeners?.set(subQueueId, { dispatch, authenticate })
+  queue.isListening = true
   return isFirstListenForQueue
 }
 
@@ -166,7 +168,6 @@ export default (queues: Map<string, ActiveQueue>) =>
       if (isFirstListenForQueue) {
         // Set up listener and create object for storing dispatches
         queue.process('*', maxConcurrency, createHandler(queueId, queues))
-        // TODO: Set a flag on the active queue that we're listening
       }
       debugLog(`Listening to queue '${queueId}' for sub queue '${subQueueId}'`)
 

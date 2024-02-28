@@ -17,7 +17,7 @@ function createQueues(queue: Queue, subQueueIds: string[]) {
     listeners.set(id, {})
   }
   const queues = new Map<string, ActiveQueue>()
-  const greatQueue = { queue, listeners }
+  const greatQueue = { queue, listeners, isListening: false }
   queues.set('great', greatQueue)
   return queues
 }

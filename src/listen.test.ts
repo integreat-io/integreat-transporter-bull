@@ -27,7 +27,7 @@ const authenticate = async () => ({
 
 function createQueues(queue: Queue) {
   const queues = new Map<string, ActiveQueue>()
-  const greatQueue = { queue, listeners: new Map() }
+  const greatQueue = { queue, listeners: new Map(), isListening: false }
   queues.set('great', greatQueue)
   return queues
 }
@@ -132,7 +132,7 @@ test('should listen to subQueueId', async (t) => {
   t.deepEqual(listenResponse2, expected)
 })
 
-test.failing('should not register handler twice', async (t) => {
+test('should not register handler twice', async (t) => {
   const processStub = sinon.stub()
   const queue = {
     process: processStub,
@@ -143,7 +143,28 @@ test.failing('should not register handler twice', async (t) => {
   const queues = createQueues(queue)
 
   await listen(queues)(dispatch, connection, authenticate)
-  await stopListening(queues)(connection)
+  const listenResponse = await listen(queues)(
+    dispatch,
+    connection,
+    authenticate,
+  )
+
+  t.is(processStub.callCount, 1)
+  t.deepEqual(listenResponse, expected)
+})
+
+test('should not register handler twice even when we remove all listeners', async (t) => {
+  const processStub = sinon.stub()
+  const queue = {
+    process: processStub,
+    close: async () => undefined,
+  } as unknown as Queue
+  const connection = { status: 'ok', queue, queueId: 'great' }
+  const expected = { status: 'ok' }
+  const queues = createQueues(queue)
+
+  await listen(queues)(dispatch, connection, authenticate)
+  await stopListening(queues)(connection) // Remove listener
   const listenResponse = await listen(queues)(
     dispatch,
     connection,

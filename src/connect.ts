@@ -111,7 +111,7 @@ export default (queues: Map<string, ActiveQueue>) =>
       debugLog(`Created bull queue '${queueId}'`)
 
       // Cache queue for reuse
-      const activeQueue = { queue, listeners: new Map() }
+      const activeQueue = { queue, listeners: new Map(), isListening: false }
       queues.set(queueId, activeQueue)
 
       // Listen to errors from queue
