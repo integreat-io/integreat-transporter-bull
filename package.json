@@ -44,10 +44,10 @@
   "devDependencies": {
     "@integreat/ts-dev-setup": "^6.0.1",
     "@types/debug": "^4.1.12",
-    "@types/node": "^20.11.20",
+    "@types/node": "^20.12.7",
     "@types/sinon": "^17.0.3",
-    "integreat": "^1.5.8",
-    "ioredis": "^5.3.2",
+    "integreat": "^1.5.9",
+    "ioredis": "^5.4.1",
     "sinon": "^17.0.1",
     "wait-on": "^7.2.0"
   }
