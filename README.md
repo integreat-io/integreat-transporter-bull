@@ -71,6 +71,9 @@ Available properties for the `options` object:
   default job type will be used.
 - `maxConcurrency`: Specifies how many parallell jobs Integreat may pick from
   the queue. Default is `1`.
+- `dontListen`: When `true`, Integreat will not listen for new jobs on the
+  queue. This is much the same as setting `maxConcurrency` to 0, but it also
+  prevents Integreat from creating a queue listener. Default is `false`.
 - `redis`: A redis connection url or an object with the properties listed below.
 - `keyPrefix`: When this is set, all Redis keys will be prefixed with this
   string. Default prefix is `bull`
