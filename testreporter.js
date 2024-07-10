@@ -50,13 +50,12 @@ function formatTestLine(name, ms, isNewRun) {
 }
 
 function lineFromEvent(event) {
-  if (event.data.details.passed) {
-    return event.data.skip
-      ? `${chalk.yellow.bold('-')} ${event.data.name}`
-      : `${chalk.green.bold('✓')} ${event.data.name}`
-  } else {
-    return `${chalk.red.bold('x')} ${event.data.name}`
-  }
+  return event.data.skip
+    ? `${chalk.yellow.bold('-')} ${event.data.name}`
+    : `${chalk.green.bold('✓')} ${event.data.name}`
+}
+function lineFromFailed(event) {
+  return `${chalk.red.bold('x')} ${event.data.name}`
 }
 
 const getCause = (cause) =>
@@ -69,6 +68,8 @@ const getCause = (cause) =>
 const createError = (event) => ({
   name: event.data.name,
   file: event.data.file,
+  line: event.data.line,
+  column: event.data.column,
   type: event.data.details.error.failureType,
   cause: getCause(event.data.details.error.cause),
 })
@@ -102,22 +103,24 @@ function formatCause(cause) {
 function formatError(error) {
   return [
     chalk.red.bold(`Test '${error.name}' failed: `),
-    `in file '${error.file}'\n`,
+    `in file '${error.file}', line ${error.line}, column ${error.column}\n`,
     formatCause(error.cause),
   ].join('\n')
 }
 
 const formatErrors = (errors) => errors.map(formatError).join('\n\n')
 
-const isError = (event) =>
-  !event.data.details.passed &&
-  event.data.details.error.failureType === 'testCodeFailure'
-
 const isFile = (event) => event.data.file.endsWith(event.data.name)
 const isTodo = (event) => event.data.todo
 
 const formatTestStatus = (status) =>
-  `${chalk.yellow(`Started ${status.running} tests.`)} ${chalk.green(`${status.passed} passed`)}, ${chalk.red(`${status.failed} failed`)}.`
+  [
+    `${chalk.yellow(`Started ${status.running} tests.`)}`,
+    status.passed ? `${chalk.green(`${status.passed} passed`)}.` : undefined,
+    status.failed ? `${chalk.red(`${status.failed} failed`)}.` : undefined,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
 function clearStatus(status = {}) {
   status.running = 0
@@ -145,15 +148,24 @@ export default async function* customReporter(source) {
           spinner.start(formatTestStatus(status))
         }
         break
-      case 'test:complete':
+      case 'test:pass':
         if (!isFile(event) && !isTodo(event)) {
-          if (isError(event)) {
-            status.failed++
-            errors.push(createError(event))
-          } else {
-            status.passed++
-          }
+          status.passed++
           const line = lineFromEvent(event)
+          yield formatTestLine(
+            line,
+            event.data.details.duration_ms,
+            isRunComplete,
+          )
+          spinner.start(formatTestStatus(status))
+        }
+        isRunComplete = false
+        break
+      case 'test:fail':
+        if (!isFile(event) && !isTodo(event)) {
+          status.failed++
+          errors.push(createError(event))
+          const line = lineFromFailed(event)
           yield formatTestLine(
             line,
             event.data.details.duration_ms,
@@ -165,11 +177,10 @@ export default async function* customReporter(source) {
         break
       case 'test:plan':
         spinner.stop()
-        yield '\r\x1b[K\n'
         break
       case 'test:diagnostic':
         if (addToSummary(event, summary)) {
-          const line = [formatErrors(errors), formatSummary(summary)]
+          const line = [' ', formatErrors(errors), formatSummary(summary)]
             .filter(Boolean)
             .join('\n\n')
 
