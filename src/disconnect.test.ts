@@ -19,13 +19,13 @@ test('should disconnect', async () => {
   assert.equal(closeStub.callCount, 1)
 })
 
-test('should do nothing when connection has no queue', async (t) => {
+test('should do nothing when connection has no queue', async () => {
   const conn = { status: 'ok', queue: undefined, queueId: 'ns1' }
 
   await assert.doesNotReject(disconnect(conn))
 })
 
-test('should do nothing when no connection', async (t) => {
+test('should do nothing when no connection', async () => {
   const conn = null
 
   await assert.doesNotReject(disconnect(conn))
