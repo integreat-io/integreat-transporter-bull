@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import sinon from 'sinon'
 import Bull, { Job } from 'bull'
 import connect from './connect.js'
+import wait from './tests/helpers/wait.js'
 
 import send from './send.js'
 
@@ -13,15 +14,14 @@ interface JobWithDelay extends Job {
 // Setup
 
 let queueCount = 1
-const nextQueueId = () => 'send' + queueCount++
 
-const beforeEach = async () => {
-  const queueId = nextQueueId()
+const setup = () => {
+  const queueId = 'send' + queueCount++
   const queue = new Bull(queueId)
   return { queue, queueId }
 }
 
-const afterEach = async (queue: Bull.Queue) => {
+const teardown = async (queue: Bull.Queue) => {
   await queue.empty()
   return queue.close()
 }
@@ -36,8 +36,11 @@ const emit = () => undefined
 
 // Tests -- action
 
-test('should send job with action and return status and data', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should send job with action and return status and data', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
   const connection = await connect({ queue, queueId }, null, null, emit)
   const expectedAction = {
@@ -45,6 +48,7 @@ test('should send job with action and return status and data', async () => {
     payload: { type: 'entry', data: { id: 'ent1', title: 'Entry 1' } },
     meta: {},
   }
+
   const ret = await send(action, connection)
 
   assert.equal(ret.status, 'ok', ret.error)
@@ -57,12 +61,13 @@ test('should send job with action and return status and data', async () => {
     queueId: jobs[0].name,
   }
   assert.deepEqual(ret.data, expectedData)
-
-  await afterEach(queue)
 })
 
-test('should send job with action at the time specified by a numeric meta.queue', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should send job with action at the time specified by a numeric meta.queue', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
   const connection = await connect({ queue, queueId }, null, null, emit)
   const actionWithDelay = {
@@ -89,12 +94,13 @@ test('should send job with action at the time specified by a numeric meta.queue'
   )
   const jobsWaiting = await queue.getWaiting()
   assert.equal(jobsWaiting.length, 0)
-
-  await afterEach(queue)
 })
 
-test('should send job to queue with subQueueId', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should send job to queue with subQueueId', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
   const connection = await connect(
     { queue, queueId, subQueueId: `${queueId}_sub` },
@@ -116,12 +122,13 @@ test('should send job to queue with subQueueId', async () => {
     queueId: `${queueId}_sub`,
   }
   assert.deepEqual(ret.data, expectedData)
-
-  await afterEach(queue)
 })
 
-test('should send job to queue with subQueueId from action meta', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should send job to queue with subQueueId from action meta', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
@@ -155,12 +162,13 @@ test('should send job to queue with subQueueId from action meta', async () => {
     queueId: `${queueId}_sub`,
   }
   assert.deepEqual(ret.data, expectedData)
-
-  await afterEach(queue)
 })
 
-test('should remove queue and auth from action meta', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should remove queue and auth from action meta', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
@@ -189,12 +197,13 @@ test('should remove queue and auth from action meta', async () => {
   const jobs = await queue.getWaiting()
   assert.equal(jobs.length, 1)
   assert.deepEqual(jobs[0].data, expectedAction)
-
-  await afterEach(queue)
 })
 
-test('should use action id as job id', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should use action id as job id', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
@@ -207,7 +216,6 @@ test('should use action id as job id', async () => {
 
   assert.equal(ret.status, 'ok', ret.error)
   assert.equal(ret.data?.id, 'job1')
-  await afterEach(queue)
 })
 
 test('should return error when queue throws', async () => {
@@ -240,8 +248,11 @@ test('should return error when no connection', async () => {
 
 // Tests -- clean
 
-test('should clean waiting jobs with SERVICE action', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should clean waiting jobs with SERVICE action', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
@@ -257,12 +268,13 @@ test('should clean waiting jobs with SERVICE action', async () => {
   assert.equal(ret.status, 'ok', ret.error)
   const jobs = await queue.getWaiting()
   assert.equal(jobs.length, 0)
-
-  await afterEach(queue)
 })
 
-test('should not clean waiting jobs newer than given ms with SERVICE action', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should not clean waiting jobs newer than given ms with SERVICE action', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
@@ -278,12 +290,13 @@ test('should not clean waiting jobs newer than given ms with SERVICE action', as
   assert.equal(ret.status, 'ok', ret.error)
   const jobs = await queue.getWaiting()
   assert.equal(jobs.length, 1)
-
-  await afterEach(queue)
 })
 
-test('should clean scheduled jobs with SERVICE action', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should clean scheduled jobs with SERVICE action', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
@@ -299,12 +312,13 @@ test('should clean scheduled jobs with SERVICE action', async () => {
   assert.equal(ret.status, 'ok', ret.error)
   const jobs = await queue.getDelayed()
   assert.equal(jobs.length, 0)
-
-  await afterEach(queue)
 })
 
-test('should clean completed jobs with SERVICE action', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should clean completed jobs with SERVICE action', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
   const cleanSpy = sinon.spy(queue, 'clean')
   const connection = await connect({ queue, queueId }, null, null, emit)
@@ -321,11 +335,14 @@ test('should clean completed jobs with SERVICE action', async () => {
   assert.equal(cleanSpy.args[0][0], 0)
   assert.equal(cleanSpy.args[0][1], 'completed')
 
-  await afterEach(queue)
+  cleanSpy.restore()
 })
 
-test('should clean completed jobs older than given ms with SERVICE action', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should clean completed jobs older than given ms with SERVICE action', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
   const cleanSpy = sinon.spy(queue, 'clean')
   const connection = await connect({ queue, queueId }, null, null, emit)
@@ -342,37 +359,16 @@ test('should clean completed jobs older than given ms with SERVICE action', asyn
   assert.equal(cleanSpy.args[0][0], 3600000)
   assert.equal(cleanSpy.args[0][1], 'completed')
 
-  await afterEach(queue)
+  cleanSpy.restore()
 })
 
-test('should clean more job types with the same SERVICE action', async () => {
-  const { queue, queueId } = await beforeEach()
+test('should return error when cleaning fails', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
 
-  const connection = await connect({ queue, queueId }, null, null, emit)
-  const action = {
-    type: 'SERVICE',
-    payload: { type: ['cleanWaiting', 'cleanScheduled'] },
-    meta: {},
-  }
-  const job = {}
-  await queue.add(job)
-  await queue.add(job, { delay: 60000 })
-
-  const ret = await send(action, connection)
-
-  assert.equal(ret.status, 'ok', ret.error)
-  const jobsWaiting = await queue.getWaiting()
-  assert.equal(jobsWaiting.length, 0)
-  const jobsScheduled = await queue.getDelayed()
-  assert.equal(jobsScheduled.length, 0)
-
-  await afterEach(queue)
-})
-
-test('should return error when cleaning fails', async () => {
-  const { queue, queueId } = await beforeEach()
-
-  sinon.stub(queue, 'clean').rejects(new Error('No queue!'))
+  const cleanSpy = sinon.stub(queue, 'clean').rejects(new Error('No queue!'))
   const connection = await connect({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
@@ -385,5 +381,31 @@ test('should return error when cleaning fails', async () => {
   assert.equal(ret.status, 'error', ret.error)
   assert.equal(ret.error, 'Cleaning of queue failed. Error: No queue!')
 
-  await afterEach(queue)
+  cleanSpy.restore()
+})
+
+test('should clean more job types with the same SERVICE action', async (t) => {
+  const { queueId, queue } = setup()
+  t.after(async () => {
+    await teardown(queue)
+  })
+
+  const connection = await connect({ queue, queueId }, null, null, emit)
+  const action = {
+    type: 'SERVICE',
+    payload: { type: ['cleanWaiting', 'cleanScheduled'] },
+    meta: {},
+  }
+  const job = {}
+  await queue.add(job)
+  await queue.add(job, { delay: 60000 })
+  await wait(100) // Hold on a little bit, to make sure these jobs arrive in the queue before we clear it
+
+  const ret = await send(action, connection)
+
+  assert.equal(ret.status, 'ok', ret.error)
+  const jobsWaiting = await queue.getWaiting()
+  const jobsScheduled = await queue.getDelayed()
+  assert.equal(jobsWaiting.length, 0)
+  assert.equal(jobsScheduled.length, 0)
 })

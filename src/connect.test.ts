@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import sinon from 'sinon'
 import Bull from 'bull'
 import disconnect from './disconnect.js'
+import wait from './tests/helpers/wait.js'
 import type { Connection } from './types.js'
 
 import connect, { prepareRedisOptions } from './connect.js'
@@ -17,11 +18,6 @@ interface QueueWithInternals extends Bull.Queue {
 // Setup
 
 const emit = () => undefined
-
-const wait = (ms: number) =>
-  new Promise((resolve, _reject) => {
-    setInterval(resolve, ms)
-  })
 
 // Tests
 
