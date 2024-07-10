@@ -12,13 +12,13 @@
     }
   },
   "scripts": {
-    "test": "node --import tsx --test --test-reporter ./testreporter.js src/*.test.ts",
+    "test": "node --import tsx --test --enable-source-maps --test-reporter ./testreporter.js src/*.test.ts",
     "pretest": "docker-compose up --detach && wait-on --log --timeout 30000 tcp:localhost:6379",
     "posttest": "docker-compose down",
     "test:setup": "docker-compose up",
     "test:teardown": "docker-compose down",
     "test:watch": "npm run dev && exit 0",
-    "dev": "node --import tsx --test --test-reporter ./testreporter.js --watch src/*.test.ts || exit 0",
+    "dev": "node --import tsx --test --enable-source-maps --test-reporter ./testreporter.js --watch src/*.test.ts || exit 0",
     "predev": "npm run pretest",
     "postdev": "npm run posttest",
     "build": "tsc",
