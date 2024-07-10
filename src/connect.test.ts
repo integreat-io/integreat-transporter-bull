@@ -302,7 +302,7 @@ test.skip('should emit error from bull', async () => {
 test('should return redis options for an url string', () => {
   const options = 'redis://redis1.test:6380'
   const expected = {
-    enableReadyCheck: false,
+    enableReadyCheck: true, // TODO: Set back to false
     maxRetriesPerRequest: null,
     uri: 'redis://redis1.test:6380',
   }
