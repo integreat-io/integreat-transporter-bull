@@ -1,4 +1,5 @@
 import chalk from 'chalk'
+import ora from 'ora'
 
 function formatMs(ms) {
   if (ms > 1000) {
@@ -42,12 +43,10 @@ function addToSummary(event, summary) {
   return type === 'duration_ms'
 }
 
-function formatTestLine(name, ms, printDiv) {
-  let line = `${name} ${chalk.grey(`(${formatMs(ms)})`)}\n`
-  if (printDiv) {
-    line = `---\n\n${line}`
-  }
-  return line
+function formatTestLine(name, ms, isNewRun) {
+  const line = `${name} ${chalk.grey(`(${formatMs(ms)})`)}\n`
+  const prefix = isNewRun ? '' : '\r\x1b[K'
+  return prefix + line
 }
 
 function lineFromEvent(event) {
@@ -117,35 +116,68 @@ const isError = (event) =>
 const isFile = (event) => event.data.file.endsWith(event.data.name)
 const isTodo = (event) => event.data.todo
 
+const formatTestStatus = (status) =>
+  `${chalk.yellow(`Started ${status.running} tests.`)} ${chalk.green(`${status.passed} passed`)}, ${chalk.red(`${status.failed} failed`)}.`
+
+function clearStatus(status = {}) {
+  status.running = 0
+  status.passed = 0
+  status.failed = 0
+  return status
+}
+
 export default async function* customReporter(source) {
   let summary = {}
   let errors = []
-  let printDiv = false
+  let isRunComplete = false
+  const status = clearStatus()
+  let spinner = ora()
 
   for await (const event of source) {
     switch (event.type) {
-      case 'test:complete':
+      case 'test:enqueue':
         if (!isFile(event) && !isTodo(event)) {
-          const line = lineFromEvent(event)
-          if (isError(event)) {
-            errors.push(createError(event))
+          status.running++
+          if (isRunComplete) {
+            isRunComplete = false
+            console.log('---\n')
           }
-          yield formatTestLine(line, event.data.details.duration_ms, printDiv)
-          printDiv = false
+          spinner.start(formatTestStatus(status))
         }
         break
+      case 'test:complete':
+        if (!isFile(event) && !isTodo(event)) {
+          if (isError(event)) {
+            status.failed++
+            errors.push(createError(event))
+          } else {
+            status.passed++
+          }
+          const line = lineFromEvent(event)
+          yield formatTestLine(
+            line,
+            event.data.details.duration_ms,
+            isRunComplete,
+          )
+          spinner.start(formatTestStatus(status))
+        }
+        isRunComplete = false
+        break
       case 'test:plan':
-        // yield '\r\x1b[K'
-        yield '\n\n'
+        spinner.stop()
+        yield '\r\x1b[K\n'
         break
       case 'test:diagnostic':
         if (addToSummary(event, summary)) {
           const line = [formatErrors(errors), formatSummary(summary)]
             .filter(Boolean)
             .join('\n\n')
+
           summary = {}
           errors = []
-          printDiv = true
+          isRunComplete = true
+          clearStatus(status)
+
           yield line
         }
         break
