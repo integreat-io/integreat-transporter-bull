@@ -271,8 +271,7 @@ test('should create new connection if given one has an error', async () => {
   await disconnect(conn)
 })
 
-// TODO: Make this work again
-test.skip('should emit error from bull', async () => {
+test('should emit error from bull', async () => {
   const emit = sinon.stub()
   const options = {
     queueId: 'ns16',
