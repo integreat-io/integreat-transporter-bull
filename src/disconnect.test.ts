@@ -1,4 +1,5 @@
-import test from 'ava'
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import sinon from 'sinon'
 import type { Connection } from './types.js'
 
@@ -6,7 +7,7 @@ import disconnect from './disconnect.js'
 
 // Tests
 
-test.skip('should disconnect', async (t) => {
+test('should disconnect', async () => {
   const closeStub = sinon.stub().resolves(undefined)
   const queue = {
     close: closeStub,
@@ -15,17 +16,17 @@ test.skip('should disconnect', async (t) => {
 
   await disconnect(conn as unknown as Connection)
 
-  t.is(closeStub.callCount, 1)
+  assert.equal(closeStub.callCount, 1)
 })
 
 test('should do nothing when connection has no queue', async (t) => {
   const conn = { status: 'ok', queue: undefined, queueId: 'ns1' }
 
-  await t.notThrowsAsync(disconnect(conn))
+  await assert.doesNotReject(disconnect(conn))
 })
 
 test('should do nothing when no connection', async (t) => {
   const conn = null
 
-  await t.notThrowsAsync(disconnect(conn))
+  await assert.doesNotReject(disconnect(conn))
 })

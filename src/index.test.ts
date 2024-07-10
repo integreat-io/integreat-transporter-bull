@@ -1,25 +1,26 @@
-import test from 'ava'
+import test from 'node:test'
+import assert from 'node:assert/strict'
 
 import transporter from './index.js'
 
 // Tests
 
-test('should be a transporter', (t) => {
-  t.is(typeof transporter.authentication, 'string')
-  t.is(typeof transporter.prepareOptions, 'function')
-  t.is(typeof transporter.connect, 'function')
-  t.is(typeof transporter.send, 'function')
-  t.is(typeof transporter.listen, 'function')
-  t.is(typeof transporter.disconnect, 'function')
+test('should be a transporter', () => {
+  assert.equal(typeof transporter.authentication, 'string')
+  assert.equal(typeof transporter.prepareOptions, 'function')
+  assert.equal(typeof transporter.connect, 'function')
+  assert.equal(typeof transporter.send, 'function')
+  assert.equal(typeof transporter.listen, 'function')
+  assert.equal(typeof transporter.disconnect, 'function')
 })
 
-test('should have authentication string', (t) => {
-  t.is(transporter.authentication, 'asObject')
+test('should have authentication string', () => {
+  assert.equal(transporter.authentication, 'asObject')
 })
 
 // Tests -- prepareOptions
 
-test('should return options object as is', (t) => {
+test('should return options object as is', () => {
   const options = {
     queueId: 'ns1',
     redis: 'redis://redis1.test:6380',
@@ -28,12 +29,12 @@ test('should return options object as is', (t) => {
 
   const ret = transporter.prepareOptions(options, serviceId)
 
-  t.deepEqual(ret, options)
+  assert.deepEqual(ret, options)
 })
 
 // Tests -- shouldListen
 
-test('should return true when options has no dontListen flag', (t) => {
+test('should return true when options has no dontListen flag', () => {
   const options = {
     queueId: 'ns1',
     redis: 'redis://redis1.test:6380',
@@ -41,10 +42,10 @@ test('should return true when options has no dontListen flag', (t) => {
 
   const ret = transporter.shouldListen!(options)
 
-  t.true(ret)
+  assert.equal(ret, true)
 })
 
-test('should return false when dontListen flag is true', (t) => {
+test('should return false when dontListen flag is true', () => {
   const options = {
     queueId: 'ns1',
     redis: 'redis://redis1.test:6380',
@@ -53,10 +54,10 @@ test('should return false when dontListen flag is true', (t) => {
 
   const ret = transporter.shouldListen!(options)
 
-  t.false(ret)
+  assert.equal(ret, false)
 })
 
-test('should return true when dontListen flag is false', (t) => {
+test('should return true when dontListen flag is false', () => {
   const options = {
     queueId: 'ns1',
     redis: 'redis://redis1.test:6380',
@@ -65,5 +66,5 @@ test('should return true when dontListen flag is false', (t) => {
 
   const ret = transporter.shouldListen!(options)
 
-  t.true(ret)
+  assert.equal(ret, true)
 })
