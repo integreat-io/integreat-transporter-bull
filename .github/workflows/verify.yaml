@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.19, 20.x]
+        node-version: [18.19, 20.x, 22.x]
 
     steps:
       - uses: actions/checkout@v3
@@ -24,4 +24,4 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run lint
-      - run: npm test
+      - run: npm run test:ci
