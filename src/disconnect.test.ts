@@ -9,17 +9,16 @@ import disconnect from './disconnect.js'
 
 test('should disconnect', async () => {
   const closeStub = sinon.stub().resolves(undefined)
-  const pauseStub = sinon.stub().resolves(undefined)
+  const getJobCountsStub = sinon.stub().resolves(undefined)
   const queue = {
     close: closeStub,
-    pause: pauseStub,
+    getJobCounts: getJobCountsStub,
   }
   const conn = { status: 'ok', queue, queueId: 'ns1' }
 
   await disconnect(conn as unknown as Connection)
 
-  assert.equal(pauseStub.callCount, 1)
-  assert.equal(pauseStub.args[0][0], true)
+  assert.equal(getJobCountsStub.callCount, 1)
   assert.equal(closeStub.callCount, 1)
 })
 

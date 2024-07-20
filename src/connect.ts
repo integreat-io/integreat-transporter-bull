@@ -76,7 +76,7 @@ function createQueue(
 // is closed. Is this the best we have?
 const isDisconnected = (queue?: Bull.Queue) => queue?.client.status === 'end'
 
-export default async function (
+export default async function connect(
   {
     redis,
     queueId = 'great',
