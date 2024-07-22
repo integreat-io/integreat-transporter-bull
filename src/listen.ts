@@ -2,26 +2,16 @@ import type { Action, Response, Ident, AuthenticateExternal } from 'integreat'
 import type { Job } from 'bull'
 import debug from 'debug'
 import { isObject, isAction } from './utils/is.js'
-import type { Connection } from './types.js'
-
-export interface PromiseWithProgress<T> extends Promise<T> {
-  onProgress?: (cb: (progress?: number) => void) => void
-}
-
-export interface DispatchWithProgress<T = unknown> {
-  (action: Action | null): PromiseWithProgress<Response<T>>
-}
-
-interface CallbackObject {
-  dispatch: DispatchWithProgress | null
-  authenticate: AuthenticateExternal | null
-}
-
-type Callbacks = Map<string, Map<string, CallbackObject>>
+import type {
+  Connection,
+  CallbackObject,
+  QueueCallback,
+  DispatchWithProgress,
+} from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
 const OK_STATUSES = ['ok', 'noaction', 'queued']
-const callbacks: Callbacks = new Map()
+const callbacks = new Map<string, QueueCallback>()
 
 const wrapJobInAction = (job: unknown): Action => ({
   type: 'REQUEST',
@@ -34,27 +24,20 @@ const setIdentOnAction = (action: Action, ident: Ident): Action => ({
 })
 
 function resolveCallbacks(
-  dispatch: DispatchWithProgress | null,
-  authenticate: AuthenticateExternal | null,
   queueId: string,
   subQueueId?: string,
 ): CallbackObject {
-  if (
-    (typeof dispatch !== 'function' || typeof authenticate !== 'function') &&
-    subQueueId
-  ) {
-    const subQueueCallbacks = callbacks.get(queueId)?.get(subQueueId)
-    if (subQueueCallbacks) {
-      return subQueueCallbacks
-    }
+  let queue = callbacks.get(queueId)
+  if (subQueueId) {
+    queue = queue?.subCallbacks?.get(subQueueId)
   }
 
-  return { dispatch, authenticate }
+  return queue || { dispatch: null, authenticate: null }
 }
 
 const getHandlerErrorReason = (queueId: string, name?: string) =>
   !queueId || callbacks.get(queueId)
-    ? !queueId || !name || callbacks.get(queueId)?.get(name)
+    ? !queueId || !name || callbacks.get(queueId)?.subCallbacks?.get(name)
       ? '`dispatch()` and `authenticate()` must be functions'
       : `No queue named '${queueId}:${name}`
     : `No queue named '${queueId}`
@@ -99,63 +82,65 @@ async function dispatchWithProgress(
   return response
 }
 
-const handler = (
-  dispatchFromHandler: DispatchWithProgress | null,
-  queueId: string,
-  authenticateFromHandler: AuthenticateExternal | null,
-) =>
-  async function processJob(job: Job) {
-    const { data, name } = job
+const normalizeSubQueueId = (name?: string) =>
+  typeof name === 'string' && name !== '__default__' ? name : undefined
 
-    const { dispatch, authenticate } = resolveCallbacks(
-      dispatchFromHandler,
-      authenticateFromHandler,
-      queueId,
-      name,
-    )
-    if (typeof dispatch !== 'function' || typeof authenticate !== 'function') {
-      const errorReason = getHandlerErrorReason(queueId, name)
-      debugLog(`Could not handle action from queue. ${errorReason}`)
-      throw new Error(`Could not handle action from queue. ${errorReason}`)
-    }
+async function handler(job: Job) {
+  const { data, queue } = job
+  const queueId = queue?.name
+  const subQueueId = normalizeSubQueueId(job.name)
 
-    const shouldWrapJob = !isAction(data)
-    const action = shouldWrapJob ? wrapJobInAction(data) : data
-
-    const response = await dispatchWithProgress(
-      action,
-      dispatch,
-      authenticate,
-      queueId,
-      job,
-    )
-
-    if (isObject(response) && typeof response.status === 'string') {
-      if (OK_STATUSES.includes(response.status)) {
-        return shouldWrapJob ? response.data : response
-      } else {
-        throw new Error(`[${response.status}] ${response.error}`)
-      }
-    } else {
-      throw new Error('Queued action did not return a valid response')
-    }
+  const { dispatch, authenticate } = resolveCallbacks(queueId, subQueueId)
+  if (typeof dispatch !== 'function' || typeof authenticate !== 'function') {
+    const errorReason = getHandlerErrorReason(queueId, subQueueId)
+    debugLog(`Could not handle action from queue. ${errorReason}`)
+    throw new Error(`Could not handle action from queue. ${errorReason}`)
   }
+
+  const shouldWrapJob = !isAction(data)
+  const action = shouldWrapJob ? wrapJobInAction(data) : data
+
+  const response = await dispatchWithProgress(
+    action,
+    dispatch,
+    authenticate,
+    queueId,
+    job,
+  )
+
+  if (isObject(response) && typeof response.status === 'string') {
+    if (OK_STATUSES.includes(response.status)) {
+      return shouldWrapJob ? response.data : response
+    } else {
+      throw new Error(`[${response.status}] ${response.error}`)
+    }
+  } else {
+    throw new Error('Queued action did not return a valid response')
+  }
+}
 
 function storeHandlers(
   dispatch: DispatchWithProgress,
   authenticate: AuthenticateExternal,
   queueId: string,
-  subQueueId: string,
+  subQueueId?: string,
 ) {
-  let queueCallbacks = callbacks.get(queueId)
   let isFirstListenForQueue = false
-  if (!queueCallbacks) {
-    queueCallbacks = new Map()
-    callbacks.set(queueId, queueCallbacks)
+  let queue = callbacks.get(queueId)
+  if (!queue) {
+    queue = { dispatch: null, authenticate: null }
+    callbacks.set(queueId, queue)
     isFirstListenForQueue = true
   }
-
-  queueCallbacks.set(subQueueId, { dispatch, authenticate })
+  if (subQueueId) {
+    if (!queue.subCallbacks) {
+      queue.subCallbacks = new Map()
+    }
+    queue.subCallbacks.set(subQueueId, { dispatch, authenticate })
+  } else {
+    queue.dispatch = dispatch
+    queue.authenticate = authenticate
+  }
   return isFirstListenForQueue
 }
 
@@ -164,35 +149,39 @@ export default async function listen(
   connection: Connection | null,
   authenticate: AuthenticateExternal,
 ): Promise<Response> {
+  if (!connection) {
+    debugLog(`Cannot listen to queue. No connection`)
+    return { status: 'error', error: 'Cannot listen to queue. No connection' }
+  }
   const {
     queue,
     maxConcurrency = 1,
     queueId = 'great',
     subQueueId,
-  } = connection || {}
+  } = connection
   if (!queue) {
     debugLog(`Cannot listen to queue '${queueId}'. No queue`)
     return { status: 'error', error: 'Cannot listen to queue. No queue' }
   }
 
+  const isFirstListenForQueue = storeHandlers(
+    dispatch,
+    authenticate,
+    queueId,
+    subQueueId,
+  )
   try {
     // Start listening to queue
     if (subQueueId) {
       // We have a sub queue – let's store all dispatches and have a catch-all listener
-      const isFirstListenForQueue = storeHandlers(
-        dispatch,
-        authenticate,
-        queueId,
-        subQueueId,
-      )
       if (isFirstListenForQueue) {
         // Set up listener and create object for storing dispatches
-        queue.process('*', maxConcurrency, handler(null, queueId, null))
+        queue.process('*', maxConcurrency, handler)
       }
       debugLog(`Listening to queue '${queueId}' for sub queue '${subQueueId}'`)
     } else {
       // Normal setup with on queue per queueId
-      queue.process(maxConcurrency, handler(dispatch, queueId, authenticate))
+      queue.process(maxConcurrency, handler)
       debugLog(`Listening to queue '${queueId}'`)
     }
 
