@@ -2,14 +2,13 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import sinon from 'sinon'
 import type { Queue } from 'bull'
-import type { HandlersObject, QueueHandlers, QueueWithCount } from './types.js'
+import type { HandlersObject, QueueObject } from './types.js'
 
 import disconnect from './disconnect.js'
 
 // Setup
 
-const handlers = new Map<string, QueueHandlers>()
-const queues = new Map<string, QueueWithCount>()
+const queues = new Map<string, QueueObject>()
 const dispatch = async () => ({ status: 'ok' })
 const authenticate = async () => ({ status: 'ok' })
 
@@ -23,18 +22,16 @@ test('should disconnect and remove queue and handler', async () => {
     close: closeStub,
     getJobCounts: getJobCountsStub,
   } as unknown as Queue
-  queues.set(queueId, { queue, count: 1 })
   const handlersObject = { dispatch, authenticate }
-  handlers.set(queueId, handlersObject)
+  queues.set(queueId, { ...handlersObject, queue, count: 1 })
   const conn = { status: 'ok', queue, queueId, handlers: handlersObject }
 
-  await disconnect(queues, handlers)(conn)
+  await disconnect(queues)(conn)
 
   assert.equal(getJobCountsStub.callCount, 1)
   assert.equal(closeStub.callCount, 1)
   assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
   assert.equal(queues.has(queueId), false, 'Queue was not removed')
-  assert.equal(handlers.has(queueId), false, 'Handlers were not removed')
   assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
 })
 
@@ -46,13 +43,12 @@ test('should not disconnect and remove queue when there are more connections lef
     close: closeStub,
     getJobCounts: getJobCountsStub,
   } as unknown as Queue
-  queues.set(queueId, { queue, count: 2 }) // We have two connections on the queue
   const handlersObject = { dispatch, authenticate }
-  handlers.set(queueId, handlersObject)
+  queues.set(queueId, { ...handlersObject, queue, count: 2 }) // We have two connections on the queue
   const conn = { status: 'ok', queue, queueId, handlers: handlersObject }
-  const expectedQueueObj = { queue, count: 1 } // We count down one
+  const expectedQueueObj = { ...handlersObject, queue, count: 1 } // We count down one
 
-  await disconnect(queues, handlers)(conn)
+  await disconnect(queues)(conn)
 
   assert.deepEqual(queues.get(queueId), expectedQueueObj)
   assert.equal(
@@ -67,7 +63,6 @@ test('should not disconnect and remove queue when there are more connections lef
   )
   assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
   assert.equal(queues.has(queueId), true, 'Queue was removed')
-  assert.equal(handlers.has(queueId), false, 'Handlers were not removed')
   assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
 })
 
@@ -80,10 +75,9 @@ test('should disconnect when there is no queue object stored', async () => {
     getJobCounts: getJobCountsStub,
   } as unknown as Queue
   const handlersObject = { dispatch, authenticate }
-  handlers.set(queueId, handlersObject)
   const conn = { status: 'ok', queue, queueId, handlers: handlersObject }
 
-  await disconnect(queues, handlers)(conn)
+  await disconnect(queues)(conn)
 
   assert.equal(
     getJobCountsStub.callCount,
@@ -97,7 +91,27 @@ test('should disconnect when there is no queue object stored', async () => {
   )
   assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
   assert.equal(queues.has(queueId), false, 'Queue was added somehow ...?')
-  assert.equal(handlers.has(queueId), false, 'Handlers were not removed')
+  assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
+})
+
+test('should disconnect when there is an empty queue object stored', async () => {
+  const queueId = 'ns76'
+  const closeStub = sinon.stub().resolves(undefined)
+  const getJobCountsStub = sinon.stub().resolves(undefined)
+  const queue = {
+    close: closeStub,
+    getJobCounts: getJobCountsStub,
+  } as unknown as Queue
+  queues.set(queueId, {}) // Empty queue object
+  const handlersObject = { dispatch, authenticate }
+  const conn = { status: 'ok', queue, queueId, handlers: handlersObject }
+
+  await disconnect(queues)(conn)
+
+  assert.equal(getJobCountsStub.callCount, 1)
+  assert.equal(closeStub.callCount, 1)
+  assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
+  assert.equal(queues.has(queueId), false, 'Queue was not removed')
   assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
 })
 
@@ -109,11 +123,16 @@ test('should disconnect sub queue and remove queue and handler', async () => {
     close: closeStub,
     getJobCounts: getJobCountsStub,
   } as unknown as Queue
-  queues.set(queueId, { queue, count: 1 })
   const subHandlers = new Map<string, HandlersObject>()
   const handlersObject = { dispatch, authenticate }
   subHandlers.set('sub0', handlersObject)
-  handlers.set(queueId, { dispatch: null, authenticate: null, subHandlers })
+  queues.set(queueId, {
+    queue,
+    count: 1,
+    dispatch: null,
+    authenticate: null,
+    subHandlers,
+  })
   const conn = {
     status: 'ok',
     queue,
@@ -122,13 +141,12 @@ test('should disconnect sub queue and remove queue and handler', async () => {
     handlers: handlersObject,
   }
 
-  await disconnect(queues, handlers)(conn)
+  await disconnect(queues)(conn)
 
   assert.equal(getJobCountsStub.callCount, 1)
   assert.equal(closeStub.callCount, 1)
   assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
   assert.equal(queues.has(queueId), false, 'Queue was not removed')
-  assert.equal(handlers.has(queueId), false, 'Handlers were not removed')
   assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
 })
 
@@ -140,12 +158,17 @@ test('should not disconnect when there are other sub queues listening', async ()
     close: closeStub,
     getJobCounts: getJobCountsStub,
   } as unknown as Queue
-  queues.set(queueId, { queue, count: 2 })
   const subHandlers = new Map<string, HandlersObject>()
   const handlersObject = { dispatch, authenticate }
   subHandlers.set('sub0', handlersObject)
   subHandlers.set('sub1', { dispatch, authenticate })
-  handlers.set(queueId, { dispatch: null, authenticate: null, subHandlers })
+  queues.set(queueId, {
+    queue,
+    count: 2,
+    dispatch: null,
+    authenticate: null,
+    subHandlers,
+  })
   const conn = {
     status: 'ok',
     queue,
@@ -153,9 +176,15 @@ test('should not disconnect when there are other sub queues listening', async ()
     subQueueId: 'sub0',
     handlers: handlersObject,
   }
-  const expectedQueueObj = { queue, count: 1 } // We count down one for sub queues too
+  const expectedQueueObj = {
+    dispatch: null,
+    authenticate: null,
+    queue,
+    subHandlers,
+    count: 1, // We count down one for sub queues too
+  }
 
-  await disconnect(queues, handlers)(conn)
+  await disconnect(queues)(conn)
 
   assert.deepEqual(queues.get(queueId), expectedQueueObj)
   assert.equal(
@@ -170,14 +199,13 @@ test('should not disconnect when there are other sub queues listening', async ()
   )
   assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
   assert.equal(queues.has(queueId), true, 'Queue was removed')
-  assert.equal(handlers.has(queueId), true, 'Queue handlers are removed')
   assert.equal(
-    handlers.get(queueId)?.subHandlers?.has('sub0'),
+    queues.get(queueId)?.subHandlers?.has('sub0'),
     false,
     'First sub handler is not removed',
   ) // This sub's handler is removed
   assert.equal(
-    handlers.get(queueId)?.subHandlers?.has('sub1'),
+    queues.get(queueId)?.subHandlers?.has('sub1'),
     true,
     'Second sub handler is removed',
   ) // Other sub is still intact
@@ -188,11 +216,11 @@ test('should do nothing when connection has no queue', async () => {
   const queueId = 'ns73'
   const conn = { status: 'ok', queue: undefined, queueId }
 
-  await assert.doesNotReject(disconnect(queues, handlers)(conn))
+  await assert.doesNotReject(disconnect(queues)(conn))
 })
 
 test('should do nothing when no connection', async () => {
   const conn = null
 
-  await assert.doesNotReject(disconnect(queues, handlers)(conn))
+  await assert.doesNotReject(disconnect(queues)(conn))
 })

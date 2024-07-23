@@ -4,10 +4,9 @@ import disconnect from './disconnect.js'
 import send from './send.js'
 import listen from './listen.js'
 import stopListening from './stopListening.js'
-import type { QueueHandlers, QueueWithCount } from './types.js'
+import type { QueueObject } from './types.js'
 
-const handlers = new Map<string, QueueHandlers>()
-const queues = new Map<string, QueueWithCount>()
+const queues = new Map<string, QueueObject>()
 
 /**
  * Bull Queue Transporter for Integreat
@@ -23,11 +22,11 @@ const bullTransporter: Transporter = {
 
   shouldListen: (options) => options.dontListen !== true,
 
-  listen: listen(handlers),
+  listen: listen(queues),
 
   stopListening,
 
-  disconnect: disconnect(queues, handlers),
+  disconnect: disconnect(queues),
 }
 
 export default bullTransporter

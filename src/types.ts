@@ -36,17 +36,17 @@ export interface DispatchWithProgress<T = unknown> {
 }
 
 export interface HandlersObject {
-  dispatch: DispatchWithProgress | null
-  authenticate: AuthenticateExternal | null
+  dispatch?: DispatchWithProgress | null
+  authenticate?: AuthenticateExternal | null
 }
 
-export interface QueueHandlers extends HandlersObject {
+export interface MainHandlersObject extends HandlersObject {
   subHandlers?: Map<string, HandlersObject>
 }
 
-export interface QueueWithCount {
-  queue: Queue
-  count: number
+export interface QueueObject extends MainHandlersObject {
+  queue?: Queue
+  count?: number
 }
 
 export interface Connection extends ConnectionBase {

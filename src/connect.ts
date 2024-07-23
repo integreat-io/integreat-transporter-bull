@@ -7,7 +7,7 @@ import type {
   EndpointOptions,
   RedisOptions,
   Authentication,
-  QueueWithCount,
+  QueueObject,
 } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
@@ -74,7 +74,7 @@ function createQueue(
 // is closed. Is this the best we have?
 const isDisconnected = (queue?: Bull.Queue) => queue?.client.status === 'end'
 
-export default (queues: Map<string, QueueWithCount>) =>
+export default (queues: Map<string, QueueObject>) =>
   async function connect(
     {
       redis,
@@ -103,7 +103,7 @@ export default (queues: Map<string, QueueWithCount>) =>
       const queueWithCount = queues.get(queueId)
       if (queueWithCount && queueWithCount.queue) {
         queue = queueWithCount.queue
-        queueWithCount.count += 1
+        queueWithCount.count = (queueWithCount.count ?? 0) + 1
       } else {
         queue = createQueue(
           queueId,

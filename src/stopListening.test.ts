@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import sinon from 'sinon'
 import listen from './listen.js'
 import type { Queue } from 'bull'
-import type { Connection, QueueHandlers } from './types.js'
+import type { Connection, QueueObject } from './types.js'
 
 import stopListening from './stopListening.js'
 
@@ -15,7 +15,7 @@ import stopListening from './stopListening.js'
 //   meta: {},
 // }
 
-const handlers = new Map<string, QueueHandlers>()
+const queues = new Map<string, QueueObject>()
 const fn = async () => ({ status: 'ok' })
 
 // Tests
@@ -34,7 +34,7 @@ test('should stop listening by removing callbacks', async () => {
     .stub()
     .resolves({ status: 'ok', access: { ident: { id: 'userFromIntegreat' } } })
 
-  const listenResponse = await listen(handlers)(
+  const listenResponse = await listen(queues)(
     dispatch,
     connection,
     authenticate,
@@ -55,20 +55,6 @@ test('should stop listening by removing callbacks', async () => {
   assert.equal(connection.handlers?.authenticate, null)
 })
 
-test('should respond with noaction when no queue', async () => {
-  const connection = { status: 'ok', queueId: 'great' }
-  const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
-  const authenticate = sinon
-    .stub()
-    .resolves({ status: 'ok', access: { ident: { id: 'userFromIntegreat' } } })
-  const expectedResponse = { status: 'noaction', error: 'No queue' }
-
-  await listen(handlers)(dispatch, connection, authenticate)
-  const stopResponse = await stopListening(connection)
-
-  assert.deepEqual(stopResponse, expectedResponse)
-})
-
 test('should respond with noaction when no connection', async () => {
   const connection = null
   const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
@@ -77,7 +63,7 @@ test('should respond with noaction when no connection', async () => {
     .resolves({ status: 'ok', access: { ident: { id: 'userFromIntegreat' } } })
   const expectedResponse = { status: 'noaction', error: 'No connection' }
 
-  await listen(handlers)(dispatch, connection, authenticate)
+  await listen(queues)(dispatch, connection, authenticate)
   const stopResponse = await stopListening(connection)
 
   assert.deepEqual(stopResponse, expectedResponse)
