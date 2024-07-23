@@ -66,6 +66,7 @@ export default (
     }
     const { queueId, subQueueId, queue } = connection
     connection.queue = undefined
+    connection.handlers = undefined
 
     const shouldClose = removeQueueAndHandlers(
       queues,
