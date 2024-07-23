@@ -44,6 +44,11 @@ export interface QueueHandlers extends HandlersObject {
   subHandlers?: Map<string, HandlersObject>
 }
 
+export interface QueueWithCount {
+  queue: Queue
+  count: number
+}
+
 export interface Connection extends ConnectionBase {
   queue?: Queue
   queueId?: string
