@@ -12,8 +12,8 @@
     }
   },
   "scripts": {
-    "test": "node --import tsx --test --enable-source-maps --experimental-test-coverage --test-reporter node-test-reporter src/*.test.ts",
-    "test:ci": "node --import tsx --test src/*.test.ts",
+    "test": "node --import tsx --test --enable-source-maps --experimental-test-coverage --test-reporter node-test-reporter 'src/**/*.test.ts'",
+    "test:legacy": "node --import tsx --no-deprecation --test --enable-source-maps src/*.test.ts src/**/*.test.ts",
     "pretest": "docker-compose up --detach && wait-on --log --timeout 30000 tcp:localhost:6379",
     "posttest": "docker-compose down",
     "pretest:ci": "npm run pretest",
@@ -21,7 +21,7 @@
     "test:setup": "docker-compose up",
     "test:teardown": "docker-compose down",
     "test:watch": "npm run dev && exit 0",
-    "dev": "node --import tsx --test --enable-source-maps --test-reporter node-test-reporter --watch src/*.test.ts || exit 0",
+    "dev": "node --import tsx --test --enable-source-maps --test-reporter node-test-reporter --watch 'src/**/*.test.ts' || exit 0",
     "predev": "npm run pretest",
     "postdev": "npm run posttest",
     "build": "tsc",
@@ -49,7 +49,7 @@
     "@types/debug": "^4.1.12",
     "@types/node": "^20.14.11",
     "@types/sinon": "^17.0.3",
-    "integreat": "^1.5.10",
+    "integreat": "^1.6.0-rc.15",
     "ioredis": "^5.4.1",
     "sinon": "^18.0.0",
     "wait-on": "^7.2.0"
