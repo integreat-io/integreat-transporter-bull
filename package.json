@@ -13,7 +13,7 @@
   },
   "scripts": {
     "test": "node --import tsx --test --enable-source-maps --experimental-test-coverage --test-reporter node-test-reporter 'src/**/*.test.ts'",
-    "test:legacy": "node --import tsx --no-deprecation --test --enable-source-maps src/*.test.ts src/**/*.test.ts",
+    "test:legacy": "node --import tsx --no-deprecation --test --enable-source-maps src/*.test.ts",
     "pretest": "docker-compose up --detach && wait-on --log --timeout 30000 tcp:localhost:6379",
     "posttest": "docker-compose down",
     "pretest:ci": "npm run pretest",
