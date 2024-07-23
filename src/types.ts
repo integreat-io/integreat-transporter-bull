@@ -35,13 +35,13 @@ export interface DispatchWithProgress<T = unknown> {
   (action: Action | null): PromiseWithProgress<Response<T>>
 }
 
-export interface CallbackObject {
+export interface HandlersObject {
   dispatch: DispatchWithProgress | null
   authenticate: AuthenticateExternal | null
 }
 
-export interface QueueCallback extends CallbackObject {
-  subCallbacks?: Map<string, CallbackObject>
+export interface QueueHandlers extends HandlersObject {
+  subHandlers?: Map<string, HandlersObject>
 }
 
 export interface Connection extends ConnectionBase {
@@ -49,7 +49,7 @@ export interface Connection extends ConnectionBase {
   queueId?: string
   subQueueId?: string
   maxConcurrency?: number
-  callback?: CallbackObject
+  handlers?: HandlersObject
 }
 
 export interface Authentication extends Record<string, unknown> {

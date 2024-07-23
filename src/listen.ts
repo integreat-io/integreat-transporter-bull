@@ -4,14 +4,15 @@ import debug from 'debug'
 import { isObject, isAction } from './utils/is.js'
 import type {
   Connection,
-  CallbackObject,
-  QueueCallback,
+  HandlersObject,
+  QueueHandlers,
   DispatchWithProgress,
 } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
 const OK_STATUSES = ['ok', 'noaction', 'queued']
-const callbacks = new Map<string, QueueCallback>()
+
+const handlers = new Map<string, QueueHandlers>()
 
 const wrapJobInAction = (job: unknown): Action => ({
   type: 'REQUEST',
@@ -26,18 +27,18 @@ const setIdentOnAction = (action: Action, ident: Ident): Action => ({
 function resolveCallbacks(
   queueId: string,
   subQueueId?: string,
-): CallbackObject {
-  let queue = callbacks.get(queueId)
+): HandlersObject {
+  let queue = handlers.get(queueId)
   if (subQueueId) {
-    queue = queue?.subCallbacks?.get(subQueueId)
+    queue = queue?.subHandlers?.get(subQueueId)
   }
 
   return queue || { dispatch: null, authenticate: null }
 }
 
 const getHandlerErrorReason = (queueId: string, name?: string) =>
-  !queueId || callbacks.get(queueId)
-    ? !queueId || !name || callbacks.get(queueId)?.subCallbacks?.get(name)
+  !queueId || handlers.get(queueId)
+    ? !queueId || !name || handlers.get(queueId)?.subHandlers?.get(name)
       ? '`dispatch()` and `authenticate()` must be functions'
       : `No queue named '${queueId}:${name}`
     : `No queue named '${queueId}`
@@ -124,24 +125,26 @@ function storeHandlers(
   authenticate: AuthenticateExternal,
   queueId: string,
   subQueueId?: string,
-) {
+): [HandlersObject, boolean] {
   let isFirstListenForQueue = false
-  let queue = callbacks.get(queueId)
+  let queue = handlers.get(queueId)
   if (!queue) {
     queue = { dispatch: null, authenticate: null }
-    callbacks.set(queueId, queue)
+    handlers.set(queueId, queue)
     isFirstListenForQueue = true
   }
   if (subQueueId) {
-    if (!queue.subCallbacks) {
-      queue.subCallbacks = new Map()
+    if (!queue.subHandlers) {
+      queue.subHandlers = new Map()
     }
-    queue.subCallbacks.set(subQueueId, { dispatch, authenticate })
+    const subQueue = { dispatch, authenticate }
+    queue.subHandlers.set(subQueueId, subQueue)
+    return [subQueue, isFirstListenForQueue]
   } else {
     queue.dispatch = dispatch
     queue.authenticate = authenticate
+    return [queue, isFirstListenForQueue]
   }
-  return isFirstListenForQueue
 }
 
 export default async function listen(
@@ -164,30 +167,33 @@ export default async function listen(
     return { status: 'error', error: 'Cannot listen to queue. No queue' }
   }
 
-  const isFirstListenForQueue = storeHandlers(
+  // Store dispatch and authenticate handlers
+  const [handlersObject, isFirstListenForQueue] = storeHandlers(
     dispatch,
     authenticate,
     queueId,
     subQueueId,
   )
-  try {
-    // Start listening to queue
-    if (subQueueId) {
-      // We have a sub queue – let's store all dispatches and have a catch-all listener
-      if (isFirstListenForQueue) {
-        // Set up listener and create object for storing dispatches
-        queue.process('*', maxConcurrency, handler)
-      }
-      debugLog(`Listening to queue '${queueId}' for sub queue '${subQueueId}'`)
-    } else {
-      // Normal setup with on queue per queueId
-      queue.process(maxConcurrency, handler)
-      debugLog(`Listening to queue '${queueId}'`)
-    }
+  // Set handlers object on connection
+  connection.handlers = handlersObject
 
-    return { status: 'ok' }
-  } catch (error) {
-    debugLog(`Cannot listen to queue '${queueId}'. ${error}`)
-    return { status: 'error', error: `Cannot listen to queue. ${error}` }
+  if (isFirstListenForQueue) {
+    // This is the first listen to this queue or sub queue, so set up handler
+    try {
+      if (subQueueId) {
+        queue.process('*', maxConcurrency, handler)
+        debugLog(
+          `Listening to queue '${queueId}' for sub queue '${subQueueId}'`,
+        )
+      } else {
+        queue.process(maxConcurrency, handler)
+        debugLog(`Listening to queue '${queueId}'`)
+      }
+    } catch (error) {
+      debugLog(`Cannot listen to queue '${queueId}'. ${error}`)
+      return { status: 'error', error: `Cannot listen to queue. ${error}` }
+    }
   }
+
+  return { status: 'ok' }
 }
