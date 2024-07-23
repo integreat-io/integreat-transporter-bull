@@ -22,7 +22,11 @@ function removeQueueAndHandlers(
       if (subQueueId) {
         const subHandlers = queueObj.subHandlers
         if (subHandlers) {
-          subHandlers.delete(subQueueId) // Remove our handler
+          const subObj = subHandlers.get(subQueueId)
+          if (subObj) {
+            subObj.dispatch = null
+            subObj.authenticate = null
+          }
           for (const handler of subHandlers.values()) {
             if (handler.dispatch) {
               // We've found another sub queue with a dispatch
@@ -36,14 +40,15 @@ function removeQueueAndHandlers(
       }
 
       // This is either a main queue or the last sub queue
-      // Remove the queue handlers and return true to signal
-      // that we can stop -- as long as we have reached the
-      // end of the connections count.
+      // Set the queue handlers to null and return true to
+      // signal that we can stop -- as long as we have reached
+      // the end of the connections count.
       const count = countDown(queueObj)
       if (count > 0) {
         return false
       } else {
-        queues.delete(queueId)
+        queueObj.dispatch = null
+        queueObj.authenticate = null
       }
     }
   }
