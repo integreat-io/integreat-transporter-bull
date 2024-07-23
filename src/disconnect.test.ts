@@ -24,8 +24,9 @@ test('should disconnect and remove queue and handler', async () => {
     getJobCounts: getJobCountsStub,
   } as unknown as Queue
   queues.set(queueId, { queue, count: 1 })
-  handlers.set(queueId, { dispatch, authenticate })
-  const conn = { status: 'ok', queue, queueId }
+  const handlersObject = { dispatch, authenticate }
+  handlers.set(queueId, handlersObject)
+  const conn = { status: 'ok', queue, queueId, handlers: handlersObject }
 
   await disconnect(queues, handlers)(conn)
 
@@ -34,6 +35,7 @@ test('should disconnect and remove queue and handler', async () => {
   assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
   assert.equal(queues.has(queueId), false, 'Queue was not removed')
   assert.equal(handlers.has(queueId), false, 'Handlers were not removed')
+  assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
 })
 
 test('should not disconnect and remove queue when there are more connections left', async () => {
@@ -45,8 +47,9 @@ test('should not disconnect and remove queue when there are more connections lef
     getJobCounts: getJobCountsStub,
   } as unknown as Queue
   queues.set(queueId, { queue, count: 2 }) // We have two connections on the queue
-  handlers.set(queueId, { dispatch, authenticate })
-  const conn = { status: 'ok', queue, queueId }
+  const handlersObject = { dispatch, authenticate }
+  handlers.set(queueId, handlersObject)
+  const conn = { status: 'ok', queue, queueId, handlers: handlersObject }
   const expectedQueueObj = { queue, count: 1 } // We count down one
 
   await disconnect(queues, handlers)(conn)
@@ -65,6 +68,7 @@ test('should not disconnect and remove queue when there are more connections lef
   assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
   assert.equal(queues.has(queueId), true, 'Queue was removed')
   assert.equal(handlers.has(queueId), false, 'Handlers were not removed')
+  assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
 })
 
 test('should disconnect when there is no queue object stored', async () => {
@@ -75,8 +79,9 @@ test('should disconnect when there is no queue object stored', async () => {
     close: closeStub,
     getJobCounts: getJobCountsStub,
   } as unknown as Queue
-  handlers.set(queueId, { dispatch, authenticate })
-  const conn = { status: 'ok', queue, queueId }
+  const handlersObject = { dispatch, authenticate }
+  handlers.set(queueId, handlersObject)
+  const conn = { status: 'ok', queue, queueId, handlers: handlersObject }
 
   await disconnect(queues, handlers)(conn)
 
@@ -93,6 +98,7 @@ test('should disconnect when there is no queue object stored', async () => {
   assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
   assert.equal(queues.has(queueId), false, 'Queue was added somehow ...?')
   assert.equal(handlers.has(queueId), false, 'Handlers were not removed')
+  assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
 })
 
 test('should disconnect sub queue and remove queue and handler', async () => {
@@ -105,9 +111,16 @@ test('should disconnect sub queue and remove queue and handler', async () => {
   } as unknown as Queue
   queues.set(queueId, { queue, count: 1 })
   const subHandlers = new Map<string, HandlersObject>()
-  subHandlers.set('sub0', { dispatch, authenticate })
+  const handlersObject = { dispatch, authenticate }
+  subHandlers.set('sub0', handlersObject)
   handlers.set(queueId, { dispatch: null, authenticate: null, subHandlers })
-  const conn = { status: 'ok', queue, queueId, subQueueId: 'sub0' }
+  const conn = {
+    status: 'ok',
+    queue,
+    queueId,
+    subQueueId: 'sub0',
+    handlers: handlersObject,
+  }
 
   await disconnect(queues, handlers)(conn)
 
@@ -116,6 +129,7 @@ test('should disconnect sub queue and remove queue and handler', async () => {
   assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
   assert.equal(queues.has(queueId), false, 'Queue was not removed')
   assert.equal(handlers.has(queueId), false, 'Handlers were not removed')
+  assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
 })
 
 test('should not disconnect when there are other sub queues listening', async () => {
@@ -128,10 +142,17 @@ test('should not disconnect when there are other sub queues listening', async ()
   } as unknown as Queue
   queues.set(queueId, { queue, count: 2 })
   const subHandlers = new Map<string, HandlersObject>()
-  subHandlers.set('sub0', { dispatch, authenticate })
+  const handlersObject = { dispatch, authenticate }
+  subHandlers.set('sub0', handlersObject)
   subHandlers.set('sub1', { dispatch, authenticate })
   handlers.set(queueId, { dispatch: null, authenticate: null, subHandlers })
-  const conn = { status: 'ok', queue, queueId, subQueueId: 'sub0' }
+  const conn = {
+    status: 'ok',
+    queue,
+    queueId,
+    subQueueId: 'sub0',
+    handlers: handlersObject,
+  }
   const expectedQueueObj = { queue, count: 1 } // We count down one for sub queues too
 
   await disconnect(queues, handlers)(conn)
@@ -160,6 +181,7 @@ test('should not disconnect when there are other sub queues listening', async ()
     true,
     'Second sub handler is removed',
   ) // Other sub is still intact
+  assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
 })
 
 test('should do nothing when connection has no queue', async () => {
