@@ -120,30 +120,47 @@ async function handler(job: Job) {
   }
 }
 
+function setHandlerObject(
+  dispatch: DispatchWithProgress | null,
+  authenticate: AuthenticateExternal | null,
+  id: string,
+  handlers: Map<string, HandlersObject>,
+): [HandlersObject, boolean] {
+  const obj = handlers.get(id) || ({} as HandlersObject) // This typing is ok, as we will set its values on the next two lines
+  obj.dispatch = dispatch
+  obj.authenticate = authenticate
+  const isFirst = !handlers.has(id)
+  if (isFirst) {
+    handlers.set(id, obj)
+  }
+  return [obj, isFirst]
+}
+
 function storeHandlers(
   dispatch: DispatchWithProgress,
   authenticate: AuthenticateExternal,
   queueId: string,
   subQueueId?: string,
 ): [HandlersObject, boolean] {
-  let isFirstListenForQueue = false
-  let queue = handlers.get(queueId)
-  if (!queue) {
-    queue = { dispatch: null, authenticate: null }
-    handlers.set(queueId, queue)
-    isFirstListenForQueue = true
-  }
-  if (subQueueId) {
+  // Set up queue handlers object
+  if (!subQueueId) {
+    // As there's no subQueueId, this is a main queue. Set up its handlers and return it
+    return setHandlerObject(dispatch, authenticate, queueId, handlers)
+  } else {
+    // This is a sub queue. First make sure we have a queue object
+    const ret = setHandlerObject(null, null, queueId, handlers)
+    const queue = ret[0] as QueueHandlers // Get the handlers and force it to a QueueHandlers object
     if (!queue.subHandlers) {
+      // Make sure we have the `subHandlers` map
       queue.subHandlers = new Map()
     }
-    const subQueue = { dispatch, authenticate }
-    queue.subHandlers.set(subQueueId, subQueue)
-    return [subQueue, isFirstListenForQueue]
-  } else {
-    queue.dispatch = dispatch
-    queue.authenticate = authenticate
-    return [queue, isFirstListenForQueue]
+    // Set and return the sub queue handlers
+    return setHandlerObject(
+      dispatch,
+      authenticate,
+      subQueueId,
+      queue.subHandlers,
+    )
   }
 }
 
@@ -181,7 +198,7 @@ export default async function listen(
     // This is the first listen to this queue or sub queue, so set up handler
     try {
       if (subQueueId) {
-        queue.process('*', maxConcurrency, handler)
+        queue.process(subQueueId, maxConcurrency, handler)
         debugLog(
           `Listening to queue '${queueId}' for sub queue '${subQueueId}'`,
         )
