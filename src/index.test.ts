@@ -11,6 +11,7 @@ test('should be a transporter', () => {
   assert.equal(typeof transporter.connect, 'function')
   assert.equal(typeof transporter.send, 'function')
   assert.equal(typeof transporter.listen, 'function')
+  assert.equal(typeof transporter.stopListening, 'function')
   assert.equal(typeof transporter.disconnect, 'function')
 })
 
