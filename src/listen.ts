@@ -133,16 +133,18 @@ function setHandlerObject(
   dispatch: DispatchWithProgress | null,
   authenticate: AuthenticateExternal | null,
   id: string,
-  handlers: Map<string, HandlersObject>,
+  queues: Map<string, HandlersObject>,
 ): [HandlersObject, boolean] {
-  const obj = handlers.get(id) || ({} as HandlersObject) // This typing is ok, as we will set its values on the next two lines
-  const isFirst = obj.dispatch === undefined // If it is null, it has been cleared
-  obj.dispatch = dispatch
-  obj.authenticate = authenticate
-  if (isFirst) {
-    handlers.set(id, obj)
-  }
-  return [obj, isFirst]
+  const oldHandlers = queues.get(id)
+  const isFirst = oldHandlers?.dispatch === undefined // If it is null, it has been cleared
+
+  // Create a new handler object here and assign the `dispatch()` and `authenticate()`
+  // handlers. It's essential that we create a new object and set it to `queues`, to
+  // stop old queues from removing our handlers -- which would happen if we shared the
+  // object.
+  const nextHandlers = { ...oldHandlers, dispatch, authenticate }
+  queues.set(id, nextHandlers)
+  return [nextHandlers, isFirst]
 }
 
 function storeHandlers(

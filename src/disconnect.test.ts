@@ -31,10 +31,13 @@ test('should disconnect and remove queue and handler', async () => {
   assert.equal(getJobCountsStub.callCount, 1)
   assert.equal(closeStub.callCount, 1)
   assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
-  const queueObj = queues.get(queueId)
-  assert.equal(queueObj?.dispatch, null, 'dispatch was not set to null')
-  assert.equal(queueObj?.authenticate, null, 'authenticate was not set to null')
   assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
+  assert.equal(handlersObject.dispatch, null, 'dispatch was not set to null')
+  assert.equal(
+    handlersObject.authenticate,
+    null,
+    'authenticate was not set to null',
+  )
 })
 
 test('should not disconnect and remove queue when there are more connections left', async () => {
@@ -113,10 +116,13 @@ test('should disconnect when there is an empty queue object stored', async () =>
   assert.equal(getJobCountsStub.callCount, 1)
   assert.equal(closeStub.callCount, 1)
   assert.equal(conn.queue, undefined, 'Queue was not removed from connection')
-  const queueObj = queues.get(queueId)
-  assert.equal(queueObj?.dispatch, null, 'dispatch was not set to null')
-  assert.equal(queueObj?.authenticate, null, 'authenticate was not set to null')
   assert.equal(conn.handlers, undefined, 'Should remove handlers on connection')
+  assert.equal(handlersObject.dispatch, null, 'dispatch was not set to null')
+  assert.equal(
+    handlersObject.authenticate,
+    null,
+    'authenticate was not set to null',
+  )
 })
 
 test('should disconnect sub queue and remove queue and handler', async () => {
