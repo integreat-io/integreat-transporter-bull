@@ -59,6 +59,53 @@ test('should listen to queue and dispatch action, authenticating with Integreat'
   assert.deepEqual(connection?.handlers, expectedCallbackObject)
 })
 
+test('should listen to queue and dispatch action, authenticating with Integreat', async () => {
+  const queueId = 'ns44'
+  const processStub = sinon.stub()
+  const queue = { process: processStub, name: queueId } as unknown as Queue
+  const connection0: Connection = { status: 'ok', queue, queueId }
+  const connection1: Connection = { status: 'ok', queue, queueId }
+  const dispatch0 = sinon.stub().resolves({ status: 'ok', data: [] })
+  const dispatch1 = sinon.stub().resolves({ status: 'ok', data: [] })
+  const authenticate = sinon
+    .stub()
+    .resolves({ status: 'ok', access: { ident: { id: 'userFromIntegreat' } } })
+  const job = { data: action, id: 'job1', name: '__default__', queue }
+  const expected = { status: 'ok' }
+  const expectedAction = { ...action, meta: metaWithIdent }
+  const expectedCallbackObject0 = { dispatch: dispatch0, authenticate }
+  const expectedCallbackObject1 = { dispatch: dispatch1, authenticate }
+
+  const listenResponse0 = await listen(queues)(
+    dispatch0,
+    connection0,
+    authenticate,
+  )
+  const listenResponse1 = await listen(queues)(
+    dispatch1,
+    connection1,
+    authenticate,
+  )
+  const processFn = processStub.args[0][1] // Get the internal job handler
+  await processFn(job) // Call internal handler to make sure it calls dispatch
+
+  assert.deepEqual(listenResponse0, expected)
+  assert.deepEqual(listenResponse1, expected)
+  assert.equal(dispatch0.callCount, 0)
+  assert.equal(dispatch1.callCount, 1)
+  assert.deepEqual(dispatch1.args[0][0], expectedAction)
+  assert.deepEqual(
+    connection0?.handlers,
+    expectedCallbackObject0,
+    'First handlers are not as expected',
+  )
+  assert.deepEqual(
+    connection1?.handlers,
+    expectedCallbackObject1,
+    'Second handlers are not as expected',
+  )
+})
+
 test('should listen to subQueueId', async () => {
   const queueId = 'ns31'
   const processStub = sinon.stub()

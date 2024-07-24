@@ -1,4 +1,5 @@
 import debug from 'debug'
+import stopListening from './stopListening.js'
 import type { Connection, QueueObject } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
@@ -14,45 +15,16 @@ function countDown(queueObj: QueueObject) {
 function removeQueueAndHandlers(
   queues: Map<string, QueueObject>,
   queueId?: string,
-  subQueueId?: string,
 ) {
-  if (queueId) {
-    const queueObj = queues.get(queueId)
-    if (queueObj) {
-      if (subQueueId) {
-        const subHandlers = queueObj.subHandlers
-        if (subHandlers) {
-          const subObj = subHandlers.get(subQueueId)
-          if (subObj) {
-            subObj.dispatch = null
-            subObj.authenticate = null
-          }
-          for (const handler of subHandlers.values()) {
-            if (handler.dispatch) {
-              // We've found another sub queue with a dispatch
-              // handler, so return false to signal that we
-              // cannot close yet
-              countDown(queueObj) // But first count down
-              return false
-            }
-          }
-        }
-      }
-
-      // This is either a main queue or the last sub queue
-      // Set the queue handlers to null and return true to
-      // signal that we can stop -- as long as we have reached
-      // the end of the connections count.
-      const count = countDown(queueObj)
-      if (count > 0) {
-        return false
-      } else {
-        queueObj.dispatch = null
-        queueObj.authenticate = null
-      }
-    }
+  const queueObj = queueId ? queues.get(queueId) : undefined
+  if (!queueObj) {
+    // We can't get the queue's object, so just close it
+    return true
   }
-  return true
+
+  // Count down the number of connections for this queue
+  const count = countDown(queueObj)
+  return count === 0 // Return true if we're the last connection, to signal that it's okay to close it
 }
 
 export default (queues: Map<string, QueueObject>) =>
@@ -60,11 +32,18 @@ export default (queues: Map<string, QueueObject>) =>
     if (!connection) {
       return
     }
-    const { queueId, subQueueId, queue } = connection
+    const stopResponse = await stopListening(connection)
+    if (stopResponse.status !== 'ok') {
+      // We only log this problem, as we would still like the connection to be closed
+      debugLog(
+        `Could not stop listening when disconnecting from queue. [${stopResponse.status}] ${stopResponse.error}`,
+      )
+    }
+    const { queueId, queue } = connection
     connection.queue = undefined
     connection.handlers = undefined
 
-    const shouldClose = removeQueueAndHandlers(queues, queueId, subQueueId)
+    const shouldClose = removeQueueAndHandlers(queues, queueId)
     if (shouldClose && queue) {
       try {
         // We need some activity towards the queue to "force" bull to close correctly
