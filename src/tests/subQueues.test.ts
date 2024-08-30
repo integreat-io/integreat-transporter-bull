@@ -452,3 +452,43 @@ test('should listen to two sub queues, and close for only one', async (t) => {
   )
   assert.deepEqual(dispatch1.args[0][0], expectedAction)
 })
+
+test('should not give a max event listeners warning when eventListenersWarnLimit is set to more than the number of listeners', async (t) => {
+  const queueId = 'ns57'
+  const dispatch = sinon.stub().resolves({ status: 'ok', data: [] })
+  const options = {
+    queueId,
+    eventListenersWarnLimit: 15,
+    redis: { host: 'localhost', port: 6379 },
+  }
+  const connect = async (index: number) =>
+    await transporter.connect(
+      { ...options, subQueueId: `sub${index}` },
+      null,
+      null,
+      emit,
+    )
+  const warnings: Error[] = []
+  const pushWarning = (warning: Error) => {
+    warnings.push(warning)
+  }
+  process.on('warning', pushWarning)
+  const connections: (Connection | null)[] = []
+  for (let i = 0; i < 11; i++) {
+    connections.push(await connect(i))
+  }
+  t.after(async () => {
+    process.off('warning', pushWarning)
+    for (const conn of connections) {
+      await transporter.disconnect(conn)
+    }
+  })
+  await Promise.all(
+    connections.map((conn) =>
+      transporter.listen!(dispatch, conn, authenticate, emit),
+    ),
+  )
+  await wait(100) // Give it 100 ms to get the warning
+
+  assert.equal(warnings.length, 0)
+})
