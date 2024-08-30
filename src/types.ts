@@ -25,6 +25,7 @@ export interface EndpointOptions extends Record<string, unknown> {
   redis?: string | RedisOptions
   keyPrefix?: string
   bullSettings?: AdvancedSettings
+  eventListenersWarnLimit?: number
 }
 
 export interface PromiseWithProgress<T> extends Promise<T> {

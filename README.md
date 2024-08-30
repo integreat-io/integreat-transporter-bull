@@ -80,6 +80,12 @@ Available properties for the `options` object:
 - `bullSettings`: Advanced settings passed directly to bull. See
   [the AdvancedSettings object](https://github.com/OptimalBits/bull/blob/develop/REFERENCE.md#queue)
   in the bull documentation.
+- `eventListenersWarnLimit`: Node will by default give a warning if more than 10
+  event listeners are added for a particular event. With many sub-queues you may
+  quickly run into that limit. As this is only a warning, it doesn't matter to
+  much, but if you get used to disregarding this warning, you might miss cases
+  where it is actually a problem. Set a high enough number here to avoid getting
+  warnings for a number you know is fine. Default is 10.
 
 The available properties for the `redis` options object are as follow:
 

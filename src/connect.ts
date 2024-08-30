@@ -84,6 +84,7 @@ export default (queues: Map<string, QueueObject>) =>
       keyPrefix,
       bullSettings,
       maxConcurrency,
+      eventListenersWarnLimit,
     }: EndpointOptions,
     authentication: Record<string, unknown> | null,
     connection: Connection | null,
@@ -121,6 +122,13 @@ export default (queues: Map<string, QueueObject>) =>
         queue.on('error', (error) =>
           emit('error', new Error(`Bull error: ${error.message}`)),
         )
+
+        // Set the wanted max number of listeners that is allowed before Node.js
+        // gives a warning.
+        if (typeof eventListenersWarnLimit === 'number') {
+          debugLog(`Setting max event listeners to ${eventListenersWarnLimit}.`)
+          queue.client.setMaxListeners(eventListenersWarnLimit)
+        }
       }
     }
 
