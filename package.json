@@ -25,7 +25,6 @@
     "predev": "npm run pretest",
     "postdev": "npm run posttest",
     "build": "tsc",
-    "coverage": "c8 report",
     "lint": "eslint --ext .ts src",
     "verify": "npm run lint && npm run build && npm run test"
   },
@@ -41,17 +40,17 @@
     "node": ">= 18"
   },
   "dependencies": {
-    "bull": "^4.15.1",
-    "debug": "^4.3.5"
+    "bull": "^4.16.1",
+    "debug": "^4.3.6"
   },
   "devDependencies": {
     "@integreat/ts-dev-setup": "^7.1.1",
     "@types/debug": "^4.1.12",
-    "@types/node": "^20.14.12",
+    "@types/node": "^20.16.2",
     "@types/sinon": "^17.0.3",
     "integreat": "^1.6.0-rc.15",
     "ioredis": "^5.4.1",
     "sinon": "^18.0.0",
-    "wait-on": "^7.2.0"
+    "wait-on": "^8.0.0"
   }
 }
