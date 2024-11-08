@@ -24,6 +24,9 @@ function removeQueueAndHandlers(
 
   // Count down the number of connections for this queue
   const count = countDown(queueObj)
+  if (count === 0) {
+    queueObj.queue = undefined // Remove reference to queue when we are closing it
+  }
   return count === 0 // Return true if we're the last connection, to signal that it's okay to close it
 }
 
