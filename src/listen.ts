@@ -159,20 +159,27 @@ function storeHandlers(
     // As there's no subQueueId, this is a main queue. Set up its handlers and return it
     return setHandlerObject(dispatch, authenticate, queueId, queues)
   } else {
-    // This is a sub queue. First make sure we have a queue object
-    const ret = setHandlerObject(null, null, queueId, queues)
-    const queue: MainHandlersObject = ret[0]
+    // This is a sub queue. First make sure we have the main queue object
+    const [mainHandlers, mainIsFirst] = setHandlerObject(
+      null,
+      null,
+      queueId,
+      queues,
+    )
+    const queue = mainHandlers as MainHandlersObject
     if (!queue.subHandlers) {
       // Make sure we have the `subHandlers` map
       queue.subHandlers = new Map()
     }
-    // Set and return the sub queue handlers
-    return setHandlerObject(
+    // Set and return the sub queue handlers, but only set the `isFirst` flag
+    // when the main queue is initialized for the first time.
+    const [subHandlers] = setHandlerObject(
       dispatch,
       authenticate,
       subQueueId,
       queue.subHandlers,
     )
+    return [subHandlers, mainIsFirst]
   }
 }
 
@@ -212,9 +219,7 @@ export default (queues: Map<string, QueueObject>) =>
       // This is the first listen to this queue or sub queue, so set up handler
       try {
         if (subQueueId) {
-          queue.process(subQueueId, maxConcurrency, (job) =>
-            handler(job, queues),
-          )
+          queue.process('*', maxConcurrency, (job) => handler(job, queues))
           debugLog(
             `Listening to queue '${queueId}' for sub queue '${subQueueId}'`,
           )
