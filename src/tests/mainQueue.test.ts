@@ -53,6 +53,7 @@ test('should connect, send, and listen', async (t) => {
     await transporter.disconnect(conn1)
     await transporter.disconnect(conn0)
   })
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse = await transporter.listen!(
     dispatch,
     conn0,
@@ -99,12 +100,14 @@ test('should listen and then stop listening', async (t) => {
     await transporter.disconnect(conn1)
     await transporter.disconnect(conn0)
   })
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse = await transporter.listen!(
     dispatch,
     conn0,
     authenticate,
     emit,
   )
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const stopResponse = await transporter.stopListening!(conn0)
   const sendResponse = await transporter.send(action, conn1)
   await wait(200) // Give it 200 ms to handle the job
@@ -157,13 +160,16 @@ test('should stop listening and then listen again', async (t) => {
     await transporter.disconnect(conn1)
     await transporter.disconnect(conn0)
   })
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse0 = await transporter.listen!(
     dispatch0,
     conn0,
     authenticate,
     emit,
   )
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const stopResponse = await transporter.stopListening!(conn0)
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse1 = await transporter.listen!(
     dispatch1,
     conn1,

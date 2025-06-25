@@ -64,12 +64,14 @@ test('should connect, send, and listen to sub queues', async (t) => {
     await transporter.disconnect(conn1)
     await transporter.disconnect(conn0)
   })
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse0 = await transporter.listen!(
     dispatch0,
     conn0,
     authenticate,
     emit,
   )
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse1 = await transporter.listen!(
     dispatch1,
     conn1,
@@ -127,12 +129,14 @@ test('should listen and then stop listening with sub queues', async (t) => {
     await transporter.disconnect(conn1)
     await transporter.disconnect(conn0)
   })
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse = await transporter.listen!(
     dispatch,
     conn0,
     authenticate,
     emit,
   )
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const stopResponse = await transporter.stopListening!(conn0)
   const sendResponse = await transporter.send(action, conn1)
   await wait(200) // Give it 200 ms to handle the job
@@ -187,18 +191,21 @@ test('should not stop other sub queues when stopping one', async (t) => {
     await transporter.disconnect(conn1)
     await transporter.disconnect(conn0)
   })
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse0 = await transporter.listen!(
     dispatch0,
     conn0,
     authenticate,
     emit,
   )
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse1 = await transporter.listen!(
     dispatch1,
     conn1,
     authenticate,
     emit,
   )
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const stopResponse = await transporter.stopListening!(conn0)
   const sendResponse = await transporter.send(action, conn2) // Sending to second queue should not be affected by stopping the first queue
   await wait(200) // Give it 200 ms to handle the job
@@ -262,13 +269,16 @@ test('should stop listening and then listen again with sub queue', async (t) => 
     await transporter.disconnect(conn1)
     await transporter.disconnect(conn0)
   })
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse0 = await transporter.listen!(
     dispatch0,
     conn0,
     authenticate,
     emit,
   )
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const stopResponse = await transporter.stopListening!(conn0) // We're stopping the first connection
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse1 = await transporter.listen!(
     dispatch1,
     conn1,
@@ -338,6 +348,7 @@ test('should listening, close, and then listen again with sub queue', async (t) 
     await transporter.disconnect(conn1)
     await transporter.disconnect(conn0)
   })
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse0 = await transporter.listen!(
     dispatch0,
     conn0,
@@ -345,6 +356,7 @@ test('should listening, close, and then listen again with sub queue', async (t) 
     emit,
   )
   await transporter.disconnect(conn0) // We're disconnecting the first connection
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse1 = await transporter.listen!(
     dispatch1,
     conn1,
@@ -409,12 +421,14 @@ test('should listen to two sub queues, and close for only one', async (t) => {
     await transporter.disconnect(conn1)
     await transporter.disconnect(conn0)
   })
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse0 = await transporter.listen!(
     dispatch0,
     conn0,
     authenticate,
     emit,
   )
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const listenResponse1 = await transporter.listen!(
     dispatch1,
     conn1,
@@ -485,6 +499,7 @@ test('should not give a max event listeners warning when eventListenersWarnLimit
   })
   await Promise.all(
     connections.map((conn) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       transporter.listen!(dispatch, conn, authenticate, emit),
     ),
   )
