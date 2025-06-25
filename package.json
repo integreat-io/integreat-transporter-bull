@@ -42,8 +42,8 @@
     "node": ">= 18"
   },
   "dependencies": {
-    "bull": "^4.16.4",
-    "debug": "^4.3.7"
+    "bull": "^4.16.5",
+    "debug": "^4.4.1"
   },
   "devDependencies": {
     "@integreat/ts-dev-setup": "^8.1.2",
