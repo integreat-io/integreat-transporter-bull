@@ -1,6 +1,5 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import wait from './helpers/wait.js'
 import type { Connection } from '../types.js'
 
 import transporter from '../index.js'
