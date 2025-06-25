@@ -70,7 +70,10 @@ Available properties for the `options` object:
   and in effect creating a "sub-queue". When you don't specify subQueueId`, the
   default job type will be used.
 - `maxConcurrency`: Specifies how many parallell jobs Integreat may pick from
-  the queue. Default is `1`.
+  the queue. Note that when setting up sub queues, the `maxConcurrency` of the
+  first sub queue will be used, as one common handler is set up for all queues.
+  There is no other way of doing this, as Bull would add the `maxConcurrency`
+  numbers together if every sub queue had its own handler. Default is `1`.
 - `dontListen`: When `true`, Integreat will not listen for new jobs on the
   queue. This is much the same as setting `maxConcurrency` to 0, but it also
   prevents Integreat from creating a queue listener. Default is `false`.
