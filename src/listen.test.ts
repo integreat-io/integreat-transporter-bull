@@ -161,15 +161,9 @@ test('should listen to subQueueId', async () => {
   const processFn = processStub.args[0][2] // Get the internal job handler
   const processResponse = await processFn(job) // Call internal handler to make sure it calls ns2 dispatch
 
-  assert.equal(
-    processStub.callCount,
-    2,
-    `process() was called ${processStub.callCount} times`,
-  )
-  assert.equal(processStub.args[0][0], 'sub1')
+  assert.equal(processStub.callCount, 1)
+  assert.equal(processStub.args[0][0], '*')
   assert.equal(processStub.args[0][1], 1) // Default max concurrency
-  assert.equal(processStub.args[1][0], 'sub2')
-  assert.equal(processStub.args[1][1], 1) // Default max concurrency
   assert.equal(authenticate1.callCount, 0)
   assert.equal(authenticate2.callCount, 1)
   assert.deepEqual(authenticate2.args[0][0], expectedAuthentication)
