@@ -33,10 +33,10 @@ test('should connect to bull queue with redis url and default prefix', async (t)
     await disconnect(queues)(conn)
   })
 
-  assert(typeof conn === 'object' && conn !== null)
+  assert.ok(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
   assert.equal(conn?.queueId, 'ns1')
-  assert(conn?.queue)
+  assert.ok(conn?.queue)
   assert.equal(conn?.queue?.name, 'ns1')
   assert.equal((conn?.queue as QueueWithInternals).keyPrefix, 'bull')
   assert.equal(conn?.queue?.client.options.host, 'localhost')
@@ -56,7 +56,7 @@ test('should reuse queue for same queueId', async (t) => {
     await disconnect(queues)(conn2)
   })
 
-  assert(conn1?.queue)
+  assert.ok(conn1?.queue)
   assert.equal(conn1?.queue, conn2?.queue)
 })
 
@@ -72,11 +72,10 @@ test('should connect to bull queue with subQueueId', async (t) => {
     await disconnect(queues)(conn)
   })
 
-  assert(typeof conn === 'object' && conn !== null)
-  assert.equal
+  assert.ok(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.queueId, 'ns3')
   assert.equal(conn?.subQueueId, 'sub1')
-  assert(conn?.queue)
+  assert.ok(conn?.queue)
   assert.equal(conn?.queue?.name, 'ns3')
   assert.equal((conn?.queue as QueueWithInternals).keyPrefix, 'bull')
   assert.equal(conn?.queue?.client.options.host, 'localhost')
@@ -95,10 +94,10 @@ test('should connect to bull queue with specified prefix', async (t) => {
     await disconnect(queues)(conn)
   })
 
-  assert(typeof conn === 'object' && conn !== null)
+  assert.ok(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
   assert.equal(conn?.queueId, 'ns4')
-  assert(conn?.queue)
+  assert.ok(conn?.queue)
   assert.equal(conn?.queue?.name, 'ns4')
   assert.equal((conn?.queue as QueueWithInternals).keyPrefix, 'something')
   assert.equal(conn?.queue?.client.options.host, 'localhost')
@@ -116,9 +115,9 @@ test('should connect to bull queue with redis options', async (t) => {
     await disconnect(queues)(conn)
   })
 
-  assert(typeof conn === 'object' && conn !== null)
+  assert.ok(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
-  assert(conn?.queue)
+  assert.ok(conn?.queue)
   assert.equal(conn?.queue?.name, 'ns5')
   assert.equal(conn?.queue?.client.options.host, 'localhost')
   assert.equal(conn?.queue?.client.options.port, 6379)
@@ -129,9 +128,9 @@ test('should connect to bull queue without options', async () => {
 
   const conn = await connect(queues)(options, null, null, emit)
 
-  assert(typeof conn === 'object' && conn !== null)
+  assert.ok(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
-  assert(conn?.queue)
+  assert.ok(conn?.queue)
   assert.equal(conn?.queue?.name, 'ns6')
   assert.equal(conn?.queue?.client.options.host, '127.0.0.1')
   assert.equal(conn?.queue?.client.options.port, 6379)
@@ -145,9 +144,9 @@ test('should use provided bull queue as is', async () => {
 
   const conn = await connect(queues)(options, null, null, emit)
 
-  assert(typeof conn === 'object' && conn !== null)
+  assert.ok(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
-  assert(conn?.queue)
+  assert.ok(conn?.queue)
   assert.equal(conn?.queue?.name, 'ns7_b')
 
   await disconnect(queues)(conn)
@@ -167,7 +166,7 @@ test('should not reuse provided bull queue', async (t) => {
     await disconnect(queues)(conn2)
   })
 
-  assert(conn1?.queue)
+  assert.ok(conn1?.queue)
   assert.notEqual(conn1?.queue, conn2?.queue)
 })
 
@@ -176,10 +175,10 @@ test('should use default queueId when none is provided', async () => {
 
   const conn = await connect(queues)(options, null, null, emit)
 
-  assert(typeof conn === 'object' && conn !== null)
+  assert.ok(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
   assert.equal(conn?.queueId, 'great')
-  assert(conn?.queue)
+  assert.ok(conn?.queue)
   assert.equal(conn?.queue?.name, 'great')
 
   await disconnect(queues)(conn)
@@ -216,9 +215,9 @@ test('should pass on bull advanced settings object', async (t) => {
     await disconnect(queues)(conn)
   })
 
-  assert(typeof conn === 'object' && conn !== null)
+  assert.ok(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
-  assert(conn?.queue)
+  assert.ok(conn?.queue)
   assert.equal((conn?.queue as QueueWithInternals).settings.lockDuration, 12345)
 })
 
@@ -238,10 +237,10 @@ test('should pass on auth object', async (t) => {
     await conn?.queue?.close() // We're closing "manually" as this connection will never be valid
   })
 
-  assert(typeof conn === 'object' && conn !== null)
+  assert.ok(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
   assert.equal(conn?.queueId, 'ns10')
-  assert(conn?.queue)
+  assert.ok(conn?.queue)
   assert.equal(conn?.queue?.name, 'ns10')
   assert.equal(conn?.queue?.client.options.username, 'me')
   assert.equal(conn?.queue?.client.options.password, 's3cr3t')
@@ -258,7 +257,7 @@ test('should reuse connection if still connected', async (t) => {
     await disconnect(queues)(conn2)
   })
 
-  assert(typeof conn2 === 'object' && conn2 !== null)
+  assert.ok(typeof conn2 === 'object' && conn2 !== null)
   assert.equal(conn2?.status, 'ok')
   assert.equal(conn2?.queueId, 'ns11')
 })
@@ -281,7 +280,7 @@ test('should create new connection when given one is closed', async (t) => {
     await disconnect(queues)(conn2)
   })
 
-  assert(typeof conn2 === 'object' && conn2 !== null)
+  assert.ok(typeof conn2 === 'object' && conn2 !== null)
   assert.equal(conn2?.status, 'ok')
   assert.equal(conn2?.queueId, 'ns14')
 })
@@ -295,7 +294,7 @@ test('should create new connection if given one has an error', async (t) => {
     await disconnect(queues)(conn)
   })
 
-  assert(typeof conn === 'object' && conn !== null)
+  assert.ok(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
   assert.equal(conn?.queueId, 'ns15')
 })
@@ -313,7 +312,7 @@ test('should emit error from bull', async (t) => {
   })
   await wait(500)
 
-  assert(emit.callCount > 1)
+  assert.ok(emit.callCount > 1)
   assert.equal(emit.args[1][0], 'error')
   const err = emit.args[1][1] as Error
   assert.deepEqual(

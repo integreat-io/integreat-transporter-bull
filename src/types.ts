@@ -32,9 +32,9 @@ export interface PromiseWithProgress<T> extends Promise<T> {
   onProgress?: (cb: (progress?: number) => void) => void
 }
 
-export interface DispatchWithProgress<T = unknown> {
-  (action: Action | null): PromiseWithProgress<Response<T>>
-}
+export type DispatchWithProgress<T = unknown> = (
+  action: Action | null,
+) => PromiseWithProgress<Response<T>>
 
 export interface HandlersObject {
   dispatch?: DispatchWithProgress | null

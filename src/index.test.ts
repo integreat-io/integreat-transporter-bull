@@ -41,6 +41,7 @@ test('should return true when options has no dontListen flag', () => {
     redis: 'redis://redis1.test:6380',
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const ret = transporter.shouldListen!(options)
 
   assert.equal(ret, true)
@@ -53,6 +54,7 @@ test('should return false when dontListen flag is true', () => {
     dontListen: true,
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const ret = transporter.shouldListen!(options)
 
   assert.equal(ret, false)
@@ -65,6 +67,7 @@ test('should return true when dontListen flag is false', () => {
     dontListen: false,
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const ret = transporter.shouldListen!(options)
 
   assert.equal(ret, true)

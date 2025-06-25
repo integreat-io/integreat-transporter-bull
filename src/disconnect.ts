@@ -53,7 +53,9 @@ export default (queues: Map<string, QueueObject>) =>
         // The action will fail if e.g. the connection is already closed, and we'll
         // silently swallow the exception.
         await queue.getJobCounts()
-      } catch {}
+      } catch {
+        /* empty */
+      }
       await queue.close()
       debugLog(`Closed bull queue '${connection.queueId}'`)
     } else {
