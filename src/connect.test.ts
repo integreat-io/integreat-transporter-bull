@@ -4,7 +4,7 @@ import sinon from 'sinon'
 import Bull from 'bull'
 import disconnect from './disconnect.js'
 import wait from './tests/helpers/wait.js'
-import type { Connection } from './types.js'
+import type { Connection, IoredisReconnectOnErrorStrategy } from './types.js'
 
 import connect, { prepareRedisOptions } from './connect.js'
 
@@ -345,6 +345,8 @@ test('should return redis options from individual params', () => {
     port: 6380,
     username: 'johnf',
     password: 's3cr3t',
+    connectTimeout: undefined,
+    reconnectOnError: null,
   }
 
   const ret = prepareRedisOptions(options)
@@ -367,6 +369,8 @@ test('should return redis options from individual params with tls', () => {
     username: 'johnf',
     password: 's3cr3t',
     tls: { host: 'redis1.test', port: 6380 },
+    connectTimeout: undefined,
+    reconnectOnError: null,
   }
 
   const ret = prepareRedisOptions(options)
@@ -405,9 +409,63 @@ test('should return redis options with auth overriding the options key and secre
     port: 6380,
     username: 'reidun',
     password: 'passord1',
+    connectTimeout: undefined,
+    reconnectOnError: null,
   }
 
   const ret = prepareRedisOptions(options, auth)
 
   assert.deepEqual(ret, expected)
+})
+
+test('should return redis options from individual params with connectTimeout', () => {
+  const options = {
+    host: 'redis1.test',
+    port: 6380,
+    tls: false,
+    auth: { key: 'johnf', secret: 's3cr3t' },
+    connectTimeout: 30_000,
+  }
+  const expected = {
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    host: 'redis1.test',
+    port: 6380,
+    username: 'johnf',
+    password: 's3cr3t',
+    connectTimeout: 30_000,
+    reconnectOnError: null,
+  }
+
+  const ret = prepareRedisOptions(options)
+
+  assert.deepEqual(ret, expected)
+})
+
+test('should return redis options from individual params with reconnectOnError', () => {
+  const reconnectOnErrorValue: IoredisReconnectOnErrorStrategy = 2
+  const options = {
+    host: 'redis1.test',
+    port: 6380,
+    tls: false,
+    auth: { key: 'johnf', secret: 's3cr3t' },
+    reconnectOnError: reconnectOnErrorValue,
+  }
+  const expectedMinusReconnectOnError = {
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    host: 'redis1.test',
+    port: 6380,
+    username: 'johnf',
+    password: 's3cr3t',
+    connectTimeout: undefined,
+  }
+
+  const ret = prepareRedisOptions(options)
+  const { reconnectOnError, ...retMinusReconnectOnError } = ret
+
+  assert.deepEqual(retMinusReconnectOnError, expectedMinusReconnectOnError)
+  assert.notEqual(ret.reconnectOnError, null)
+  assert.notEqual(ret.reconnectOnError, undefined)
+  assert.equal(ret.reconnectOnError!(new Error('test')), reconnectOnErrorValue)
 })
