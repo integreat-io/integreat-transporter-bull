@@ -11,6 +11,7 @@ import type {
   Authentication,
   IoredisReconnectOnErrorStrategy,
 } from './types.js'
+import { ReconnectOnErrorStrategy } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
 
@@ -42,11 +43,21 @@ const renameRedisOptions = ({
 
 const mapToReconnectOnError =
   (
-    ioredisReconnectOnErrorStrategy: IoredisReconnectOnErrorStrategy,
+    reconnectOnErrorStrategy: ReconnectOnErrorStrategy,
   ): ReconnectOnError | null =>
   (error: Error): IoredisReconnectOnErrorStrategy => {
     debugLog(`Error from Redis: ${error}`)
-    return ioredisReconnectOnErrorStrategy
+    switch (reconnectOnErrorStrategy) {
+      case ReconnectOnErrorStrategy.NoReconnect: {
+        return false
+      }
+      case ReconnectOnErrorStrategy.ReconnectOnly: {
+        return 1
+      }
+      case ReconnectOnErrorStrategy.ReconnectAndResend: {
+        return 2
+      }
+    }
   }
 
 const generateRedisOptions = (redis?: RedisOptions | string | null) =>

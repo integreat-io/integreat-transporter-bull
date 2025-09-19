@@ -4,7 +4,11 @@ import sinon from 'sinon'
 import Bull from 'bull'
 import disconnect from './disconnect.js'
 import wait from './tests/helpers/wait.js'
-import type { Connection, IoredisReconnectOnErrorStrategy } from './types.js'
+import {
+  Connection,
+  IoredisReconnectOnErrorStrategy,
+  ReconnectOnErrorStrategy,
+} from './types.js'
 
 import connect, { prepareRedisOptions } from './connect.js'
 
@@ -442,30 +446,62 @@ test('should return redis options from individual params with connectTimeout', (
   assert.deepEqual(ret, expected)
 })
 
-test('should return redis options from individual params with reconnectOnError', () => {
-  const reconnectOnErrorValue: IoredisReconnectOnErrorStrategy = 2
-  const options = {
-    host: 'redis1.test',
-    port: 6380,
-    tls: false,
-    auth: { key: 'johnf', secret: 's3cr3t' },
-    reconnectOnError: reconnectOnErrorValue,
-  }
-  const expectedMinusReconnectOnError = {
-    enableReadyCheck: false,
-    maxRetriesPerRequest: null,
-    host: 'redis1.test',
-    port: 6380,
-    username: 'johnf',
-    password: 's3cr3t',
-    connectTimeout: undefined,
-  }
+type ReconnectOnErrorTestCase = {
+  input: ReconnectOnErrorStrategy | undefined
+  expected: IoredisReconnectOnErrorStrategy | null
+}
 
-  const ret = prepareRedisOptions(options)
-  const { reconnectOnError, ...retMinusReconnectOnError } = ret
+const reconnectOnErrorTestCases: ReconnectOnErrorTestCase[] = [
+  {
+    input: undefined,
+    expected: null,
+  },
+  {
+    input: ReconnectOnErrorStrategy.NoReconnect,
+    expected: false,
+  },
+  {
+    input: ReconnectOnErrorStrategy.ReconnectOnly,
+    expected: 1,
+  },
+  {
+    input: ReconnectOnErrorStrategy.ReconnectAndResend,
+    expected: 2,
+  },
+]
 
-  assert.deepEqual(retMinusReconnectOnError, expectedMinusReconnectOnError)
-  assert.notEqual(ret.reconnectOnError, null)
-  assert.notEqual(ret.reconnectOnError, undefined)
-  assert.equal(ret.reconnectOnError!(new Error('test')), reconnectOnErrorValue)
-})
+for (const reconnectOnErrorTestCase of reconnectOnErrorTestCases) {
+  test(`should return redis options from individual params with reconnectOnError: ${reconnectOnErrorTestCase.input}`, () => {
+    const options = {
+      host: 'redis1.test',
+      port: 6380,
+      tls: false,
+      auth: { key: 'johnf', secret: 's3cr3t' },
+      reconnectOnError: reconnectOnErrorTestCase.input,
+    }
+    const expectedMinusReconnectOnError = {
+      enableReadyCheck: false,
+      maxRetriesPerRequest: null,
+      host: 'redis1.test',
+      port: 6380,
+      username: 'johnf',
+      password: 's3cr3t',
+      connectTimeout: undefined,
+    }
+
+    const ret = prepareRedisOptions(options)
+    const { reconnectOnError, ...retMinusReconnectOnError } = ret
+
+    assert.deepEqual(retMinusReconnectOnError, expectedMinusReconnectOnError)
+    if (reconnectOnErrorTestCase.input === undefined) {
+      assert.equal(ret.reconnectOnError, null)
+    } else {
+      assert.notEqual(ret.reconnectOnError, null)
+      assert.notEqual(ret.reconnectOnError, undefined)
+      assert.equal(
+        ret.reconnectOnError!(new Error('test')),
+        reconnectOnErrorTestCase.expected,
+      )
+    }
+  })
+}

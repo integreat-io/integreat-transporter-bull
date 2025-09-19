@@ -11,7 +11,13 @@ export interface RedisOptions {
     secret?: string
   }
   connectTimeout?: number
-  reconnectOnError?: IoredisReconnectOnErrorStrategy
+  reconnectOnError?: ReconnectOnErrorStrategy
+}
+
+export enum ReconnectOnErrorStrategy {
+  NoReconnect = 'noReconnect',
+  ReconnectOnly = 'reconnectOnly',
+  ReconnectAndResend = 'reconnectAndResend',
 }
 
 /**
