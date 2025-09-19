@@ -41,17 +41,17 @@
     "node": ">= 18"
   },
   "dependencies": {
-    "bull": "^4.15.1",
-    "debug": "^4.3.5"
+    "bull": "^4.16.5",
+    "debug": "^4.4.3"
   },
   "devDependencies": {
-    "@integreat/ts-dev-setup": "^7.1.0",
+    "@integreat/ts-dev-setup": "^7.1.2",
     "@types/debug": "^4.1.12",
-    "@types/node": "^20.14.11",
-    "@types/sinon": "^17.0.3",
-    "integreat": "^1.6.0-rc.15",
-    "ioredis": "^5.4.1",
-    "sinon": "^18.0.0",
+    "@types/node": "^20.19.17",
+    "@types/sinon": "^17.0.4",
+    "integreat": "^1.6.4",
+    "ioredis": "^5.7.0",
+    "sinon": "^18.0.1",
     "wait-on": "^7.2.0"
   }
 }
