@@ -10,7 +10,24 @@ export interface RedisOptions {
     key?: string
     secret?: string
   }
+  connectTimeout?: number
+  reconnectOnError?: ReconnectOnErrorStrategy
 }
+
+export enum ReconnectOnErrorStrategy {
+  NoReconnect = 'noReconnect',
+  ReconnectOnly = 'reconnectOnly',
+  ReconnectAndResend = 'reconnectAndResend',
+}
+
+/**
+ * - https://github.com/redis/ioredis/tree/v5.4.1?tab=readme-ov-file#reconnect-on-error
+ * - https://github.com/redis/ioredis/blob/v5.4.1/lib/redis/RedisOptions.ts#L78
+ */
+export type IoredisReconnectOnErrorStrategy =
+  | false // Do not reconnect.
+  | 1 // Reconnect and do not resend the failed command (who triggered the error) after reconnection.
+  | 2 // Reconnect and resend the failed command (who triggered the error) after reconnection.
 
 export interface EndpointOptions extends Record<string, unknown> {
   queue?: Queue

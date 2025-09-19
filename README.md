@@ -88,6 +88,11 @@ The available properties for the `redis` options object are as follow:
 - `port`: The Redis server port, default is `6379`
 - `auth`: The Redis username as `key` and Redis password as `secret`
 - `tls`: Set to `true` to enable TLS. Default is `false`
+- `connectTimeout`: How long in milliseconds the client will wait before killing a socket due to inactivity during initial connection. Defaults to 10000 (10 seconds).
+- `reconnectOnError`: Whether or not to reconnect (and optionally resend failed command) on Redis errors. Defaults to `noReconnect`. Options are:
+  - `noReconnect`: Do not reconnect.
+  - `reconnectOnly`: Reconnect. Do not resend failed command.
+  - `reconnectAndResend`: Reconnect and resend failed command.
 
 You may choose to set the `uri` or specify the individual properties.
 

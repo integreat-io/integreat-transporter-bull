@@ -1,6 +1,7 @@
 /* eslint-disable security/detect-object-injection */
 import Bull, { QueueOptions } from 'bull'
 import { RedisOptions as IORedisOptions } from 'ioredis'
+import { ReconnectOnError } from 'ioredis/built/redis/RedisOptions.js'
 import debug from 'debug'
 import { isObject } from './utils/is.js'
 import type {
@@ -8,7 +9,9 @@ import type {
   EndpointOptions,
   RedisOptions,
   Authentication,
+  IoredisReconnectOnErrorStrategy,
 } from './types.js'
+import { ReconnectOnErrorStrategy } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
 
@@ -20,6 +23,8 @@ const renameRedisOptions = ({
   port,
   tls,
   auth: { key, secret } = {},
+  connectTimeout,
+  reconnectOnError,
 }: RedisOptions) =>
   typeof uri === 'string'
     ? { uri }
@@ -29,7 +34,31 @@ const renameRedisOptions = ({
         username: key,
         password: secret,
         ...(tls ? { tls: { host, port } } : {}),
+        connectTimeout,
+        reconnectOnError:
+          reconnectOnError === undefined
+            ? null
+            : mapToReconnectOnError(reconnectOnError),
       }
+
+const mapToReconnectOnError =
+  (
+    reconnectOnErrorStrategy: ReconnectOnErrorStrategy,
+  ): ReconnectOnError | null =>
+  (error: Error): IoredisReconnectOnErrorStrategy => {
+    debugLog(`Error from Redis: ${error}`)
+    switch (reconnectOnErrorStrategy) {
+      case ReconnectOnErrorStrategy.NoReconnect: {
+        return false
+      }
+      case ReconnectOnErrorStrategy.ReconnectOnly: {
+        return 1
+      }
+      case ReconnectOnErrorStrategy.ReconnectAndResend: {
+        return 2
+      }
+    }
+  }
 
 const generateRedisOptions = (redis?: RedisOptions | string | null) =>
   typeof redis === 'string'
