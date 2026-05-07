@@ -29,7 +29,7 @@ test('should connect and disconnect sub queue', async () => {
 
   assert(conn, 'No connection')
   assert.equal(conn.status, 'ok')
-  assert((conn as Connection).queue, 'No queue')
+  assert.equal((conn as Connection).queue, undefined, 'Still has a queue')
 })
 
 test('should connect, send, and listen to sub queues', async (t) => {
@@ -268,14 +268,14 @@ test('should stop listening and then listen again with sub queue', async (t) => 
     authenticate,
     emit,
   )
-  const stopResponse = await transporter.stopListening!(conn0)
+  const stopResponse = await transporter.stopListening!(conn0) // We're stopping the first connection
   const listenResponse1 = await transporter.listen!(
     dispatch1,
     conn1,
     authenticate,
     emit,
   )
-  const sendResponse = await transporter.send(action, conn2)
+  const sendResponse = await transporter.send(action, conn2) // Should only be sent to the second connection
   await wait(200) // Give it 200 ms to handle the job
 
   assert.equal(

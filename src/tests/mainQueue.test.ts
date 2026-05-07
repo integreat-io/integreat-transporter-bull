@@ -27,7 +27,7 @@ test('should connect and disconnect', async () => {
 
   assert(conn, 'No connection')
   assert.equal(conn.status, 'ok')
-  assert((conn as Connection).queue, 'No queue')
+  assert.equal((conn as Connection).queue, undefined, 'Still has a queue')
 })
 
 test('should connect, send, and listen', async (t) => {
