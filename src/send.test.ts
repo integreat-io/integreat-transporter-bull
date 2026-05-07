@@ -4,6 +4,7 @@ import sinon from 'sinon'
 import Bull, { Job } from 'bull'
 import connect from './connect.js'
 import wait from './tests/helpers/wait.js'
+import type { QueueWithCount } from './types.js'
 
 import send from './send.js'
 
@@ -33,6 +34,7 @@ const action = {
 }
 
 const emit = () => undefined
+const queues = new Map<string, QueueWithCount>()
 
 // Tests -- action
 
@@ -42,7 +44,7 @@ test('should send job with action and return status and data', async (t) => {
     await teardown(queue)
   })
 
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const expectedAction = {
     type: 'SET',
     payload: { type: 'entry', data: { id: 'ent1', title: 'Entry 1' } },
@@ -69,7 +71,7 @@ test('should send job with action at the time specified by a numeric meta.queue'
     await teardown(queue)
   })
 
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const actionWithDelay = {
     ...action,
     meta: { ...action.meta, queue: Date.now() + 60000 },
@@ -102,7 +104,7 @@ test('should send job to queue with subQueueId', async (t) => {
     await teardown(queue)
   })
 
-  const connection = await connect(
+  const connection = await connect(queues)(
     { queue, queueId, subQueueId: `${queueId}_sub` },
     null,
     null,
@@ -130,7 +132,7 @@ test('should send job to queue with subQueueId from action meta', async (t) => {
     await teardown(queue)
   })
 
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SET',
     payload: {
@@ -170,7 +172,7 @@ test('should remove queue and auth from action meta', async (t) => {
     await teardown(queue)
   })
 
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SET',
     payload: {
@@ -205,7 +207,7 @@ test('should use action id as job id', async (t) => {
     await teardown(queue)
   })
 
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SET',
     payload: { type: 'entry', data: { id: 'ent1', title: 'Entry 1' } },
@@ -254,7 +256,7 @@ test('should clean waiting jobs with SERVICE action', async (t) => {
     await teardown(queue)
   })
 
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanWaiting' },
@@ -276,7 +278,7 @@ test('should not clean waiting jobs newer than given ms with SERVICE action', as
     await teardown(queue)
   })
 
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanWaiting', olderThanMs: 7200000 },
@@ -298,7 +300,7 @@ test('should clean scheduled jobs with SERVICE action', async (t) => {
     await teardown(queue)
   })
 
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanScheduled' },
@@ -321,7 +323,7 @@ test('should clean completed jobs with SERVICE action', async (t) => {
   })
 
   const cleanSpy = sinon.spy(queue, 'clean')
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanCompleted' },
@@ -345,7 +347,7 @@ test('should clean completed jobs older than given ms with SERVICE action', asyn
   })
 
   const cleanSpy = sinon.spy(queue, 'clean')
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanCompleted', olderThanMs: 3600000 },
@@ -369,7 +371,7 @@ test('should return error when cleaning fails', async (t) => {
   })
 
   const cleanSpy = sinon.stub(queue, 'clean').rejects(new Error('No queue!'))
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: 'cleanCompleted' },
@@ -390,7 +392,7 @@ test('should clean more job types with the same SERVICE action', async (t) => {
     await teardown(queue)
   })
 
-  const connection = await connect({ queue, queueId }, null, null, emit)
+  const connection = await connect(queues)({ queue, queueId }, null, null, emit)
   const action = {
     type: 'SERVICE',
     payload: { type: ['cleanWaiting', 'cleanScheduled'] },

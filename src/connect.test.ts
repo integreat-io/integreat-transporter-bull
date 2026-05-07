@@ -8,6 +8,8 @@ import {
   Connection,
   IoredisReconnectOnErrorStrategy,
   ReconnectOnErrorStrategy,
+  QueueHandlers,
+  QueueWithCount,
 } from './types.js'
 
 import connect, { prepareRedisOptions } from './connect.js'
@@ -22,6 +24,8 @@ interface QueueWithInternals extends Bull.Queue {
 // Setup
 
 const emit = () => undefined
+const handlers = new Map<string, QueueHandlers>()
+const queues = new Map<string, QueueWithCount>()
 
 // Tests
 
@@ -31,9 +35,9 @@ test('should connect to bull queue with redis url and default prefix', async (t)
     redis: { host: 'localhost', port: 6379 },
   }
 
-  const conn = await connect(options, null, null, emit)
+  const conn = await connect(queues)(options, null, null, emit)
   t.after(async () => {
-    await disconnect(conn)
+    await disconnect(queues, handlers)(conn)
   })
 
   assert(typeof conn === 'object' && conn !== null)
@@ -52,11 +56,11 @@ test('should reuse queue for same queueId', async (t) => {
     redis: { host: 'localhost', port: 6379 },
   }
 
-  const conn1 = await connect(options, null, null, emit)
-  const conn2 = await connect(options, null, null, emit)
+  const conn1 = await connect(queues)(options, null, null, emit)
+  const conn2 = await connect(queues)(options, null, null, emit)
   t.after(async () => {
-    await disconnect(conn1)
-    await disconnect(conn2)
+    await disconnect(queues, handlers)(conn1)
+    await disconnect(queues, handlers)(conn2)
   })
 
   assert(conn1?.queue)
@@ -70,9 +74,9 @@ test('should connect to bull queue with subQueueId', async (t) => {
     redis: { host: 'localhost', port: 6379 },
   }
 
-  const conn = await connect(options, null, null, emit)
+  const conn = await connect(queues)(options, null, null, emit)
   t.after(async () => {
-    await disconnect(conn)
+    await disconnect(queues, handlers)(conn)
   })
 
   assert(typeof conn === 'object' && conn !== null)
@@ -93,9 +97,9 @@ test('should connect to bull queue with specified prefix', async (t) => {
     keyPrefix: 'something',
   }
 
-  const conn = await connect(options, null, null, emit)
+  const conn = await connect(queues)(options, null, null, emit)
   t.after(async () => {
-    await disconnect(conn)
+    await disconnect(queues, handlers)(conn)
   })
 
   assert(typeof conn === 'object' && conn !== null)
@@ -114,9 +118,9 @@ test('should connect to bull queue with redis options', async (t) => {
     redis: { host: 'localhost', port: 6379 },
   }
 
-  const conn = await connect(options, null, null, emit)
+  const conn = await connect(queues)(options, null, null, emit)
   t.after(async () => {
-    await disconnect(conn)
+    await disconnect(queues, handlers)(conn)
   })
 
   assert(typeof conn === 'object' && conn !== null)
@@ -130,7 +134,7 @@ test('should connect to bull queue with redis options', async (t) => {
 test('should connect to bull queue without options', async () => {
   const options = { queueId: 'ns6' }
 
-  const conn = await connect(options, null, null, emit)
+  const conn = await connect(queues)(options, null, null, emit)
 
   assert(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
@@ -139,27 +143,45 @@ test('should connect to bull queue without options', async () => {
   assert.equal(conn?.queue?.client.options.host, '127.0.0.1')
   assert.equal(conn?.queue?.client.options.port, 6379)
 
-  await disconnect(conn)
+  await disconnect(queues, handlers)(conn)
 })
 
 test('should use provided bull queue as is', async () => {
   const queue = new Bull('ns7_b') // Different queueId than options
   const options = { queueId: 'ns7', queue }
 
-  const conn = await connect(options, null, null, emit)
+  const conn = await connect(queues)(options, null, null, emit)
 
   assert(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
   assert(conn?.queue)
   assert.equal(conn?.queue?.name, 'ns7_b')
 
-  await disconnect(conn)
+  await disconnect(queues, handlers)(conn)
+})
+
+test('should not reuse provided bull queue', async (t) => {
+  const queue = new Bull('ns17_b') // Different queueId than options
+  const options = {
+    queueId: 'ns17',
+    redis: { host: 'localhost', port: 6379 },
+  }
+
+  const conn1 = await connect(queues)({ ...options, queue }, null, null, emit) // Provide queue for the first connection
+  const conn2 = await connect(queues)(options, null, null, emit) // .. and not for the second
+  t.after(async () => {
+    await disconnect(queues, handlers)(conn1)
+    await disconnect(queues, handlers)(conn2)
+  })
+
+  assert(conn1?.queue)
+  assert.notEqual(conn1?.queue, conn2?.queue)
 })
 
 test('should use default queueId when none is provided', async () => {
   const options = {}
 
-  const conn = await connect(options, null, null, emit)
+  const conn = await connect(queues)(options, null, null, emit)
 
   assert(typeof conn === 'object' && conn !== null)
   assert.equal(conn?.status, 'ok')
@@ -167,7 +189,7 @@ test('should use default queueId when none is provided', async () => {
   assert(conn?.queue)
   assert.equal(conn?.queue?.name, 'great')
 
-  await disconnect(conn)
+  await disconnect(queues, handlers)(conn)
 })
 
 test('should pass on some options to connection object', async () => {
@@ -177,14 +199,14 @@ test('should pass on some options to connection object', async () => {
     maxConcurrency: 5,
   }
 
-  const conn = await connect(options, null, null, emit)
+  const conn = await connect(queues)(options, null, null, emit)
 
   assert.equal(conn?.status, 'ok')
   assert.equal(conn?.queueId, 'ns8')
   assert.equal(conn?.subQueueId, 'internal')
   assert.equal(conn?.maxConcurrency, 5)
 
-  await disconnect(conn)
+  await disconnect(queues, handlers)(conn)
 })
 
 test('should pass on bull advanced settings object', async (t) => {
@@ -196,9 +218,9 @@ test('should pass on bull advanced settings object', async (t) => {
     },
   }
 
-  const conn = await connect(options, null, null, emit)
+  const conn = await connect(queues)(options, null, null, emit)
   t.after(async () => {
-    await disconnect(conn)
+    await disconnect(queues, handlers)(conn)
   })
 
   assert(typeof conn === 'object' && conn !== null)
@@ -218,7 +240,7 @@ test('should pass on auth object', async (t) => {
     secret: 's3cr3t',
   }
 
-  const conn = await connect(options, authentication, null, emit)
+  const conn = await connect(queues)(options, authentication, null, emit)
   t.after(async () => {
     await conn?.queue?.close() // We're closing "manually" as this connection will never be valid
   })
@@ -236,11 +258,11 @@ test('should reuse connection if still connected', async (t) => {
   const options1 = { queueId: 'ns11' }
   const options2 = { queueId: 'ns12' }
 
-  const conn1 = await connect(options1, null, null, emit)
-  const conn2 = await connect(options2, null, conn1, emit)
+  const conn1 = await connect(queues)(options1, null, null, emit)
+  const conn2 = await connect(queues)(options2, null, conn1, emit)
   t.after(async () => {
-    await disconnect(conn1)
-    await disconnect(conn2)
+    await disconnect(queues, handlers)(conn1)
+    await disconnect(queues, handlers)(conn2)
   })
 
   assert(typeof conn2 === 'object' && conn2 !== null)
@@ -252,7 +274,7 @@ test('should create new connection when given one is closed', async (t) => {
   const options1 = { queueId: 'ns13' }
   const options2 = { queueId: 'ns14' }
 
-  const conn1 = await connect(options1, null, null, emit)
+  const conn1 = await connect(queues)(options1, null, null, emit)
   const conn1Closed = {
     ...conn1,
     queue: {
@@ -260,10 +282,10 @@ test('should create new connection when given one is closed', async (t) => {
       client: { ...conn1?.queue?.client, status: 'end' },
     },
   } as Connection
-  const conn2 = await connect(options2, null, conn1Closed, emit)
+  const conn2 = await connect(queues)(options2, null, conn1Closed, emit)
   t.after(async () => {
-    await disconnect(conn1)
-    await disconnect(conn2)
+    await disconnect(queues, handlers)(conn1)
+    await disconnect(queues, handlers)(conn2)
   })
 
   assert(typeof conn2 === 'object' && conn2 !== null)
@@ -275,9 +297,9 @@ test('should create new connection if given one has an error', async (t) => {
   const options = { queueId: 'ns15' }
   const connection = { status: 'error', error: 'What happened?' }
 
-  const conn = await connect(options, null, connection, emit)
+  const conn = await connect(queues)(options, null, connection, emit)
   t.after(async () => {
-    await disconnect(conn)
+    await disconnect(queues, handlers)(conn)
   })
 
   assert(typeof conn === 'object' && conn !== null)
@@ -292,7 +314,7 @@ test('should emit error from bull', async (t) => {
     redis: 'http://unknown.test:9999',
   }
 
-  const conn = await connect(options, null, null, emit)
+  const conn = await connect(queues)(options, null, null, emit)
   t.after(async () => {
     await conn?.queue?.close() // We're closing "manually" as this connection will never be valid
   })
