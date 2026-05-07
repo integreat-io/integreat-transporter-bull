@@ -7,10 +7,6 @@ export default async function stopListening(
   if (!connection) {
     return { status: 'noaction', error: 'No connection' }
   }
-  const { queue } = connection
-  if (!queue) {
-    return { status: 'noaction', error: 'No queue' }
-  }
 
   if (connection.handlers) {
     connection.handlers.dispatch = null

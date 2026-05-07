@@ -1,65 +1,56 @@
 import debug from 'debug'
-import type { Connection, QueueHandlers, QueueWithCount } from './types.js'
+import type { Connection, QueueObject } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
 
-function removeQueueHandlers(
-  handlers: Map<string, QueueHandlers>,
-  queueId: string,
-  subQueueId?: string,
-) {
-  if (subQueueId) {
-    const subHandlers = handlers.get(queueId)?.subHandlers
-    if (subHandlers) {
-      subHandlers.delete(subQueueId) // Remove our handler
-      for (const handler of subHandlers.values()) {
-        if (handler.dispatch) {
-          // We've found another sub queue with a dispatch
-          // handler, so return false to signal that we
-          // cannot close yet
-          return false
-        }
-      }
-    }
+function countDown(queueObj: QueueObject) {
+  if (queueObj.count && queueObj.count > 1) {
+    return (queueObj.count -= 1)
+  } else {
+    return 0
   }
-
-  // This is either a main queue or the last sub queue
-  // Remove the queue handlers and return true to signal
-  // that we can stop
-  handlers.delete(queueId)
-  return true
-}
-
-function removeQueue(queues: Map<string, QueueWithCount>, queueId: string) {
-  const queueObj = queues.get(queueId)
-  if (queueObj) {
-    if (queueObj.count > 1) {
-      return (queueObj.count -= 1)
-    } else {
-      queues.delete(queueId)
-    }
-  }
-  return 0
 }
 
 function removeQueueAndHandlers(
-  queues: Map<string, QueueWithCount>,
-  handlers: Map<string, QueueHandlers>,
+  queues: Map<string, QueueObject>,
   queueId?: string,
   subQueueId?: string,
 ) {
   if (queueId) {
-    const shouldClose = removeQueueHandlers(handlers, queueId, subQueueId)
-    const connectionCount = removeQueue(queues, queueId)
-    return shouldClose && connectionCount === 0
+    const queueObj = queues.get(queueId)
+    if (queueObj) {
+      if (subQueueId) {
+        const subHandlers = queueObj.subHandlers
+        if (subHandlers) {
+          subHandlers.delete(subQueueId) // Remove our handler
+          for (const handler of subHandlers.values()) {
+            if (handler.dispatch) {
+              // We've found another sub queue with a dispatch
+              // handler, so return false to signal that we
+              // cannot close yet
+              countDown(queueObj) // But first count down
+              return false
+            }
+          }
+        }
+      }
+
+      // This is either a main queue or the last sub queue
+      // Remove the queue handlers and return true to signal
+      // that we can stop -- as long as we have reached the
+      // end of the connections count.
+      const count = countDown(queueObj)
+      if (count > 0) {
+        return false
+      } else {
+        queues.delete(queueId)
+      }
+    }
   }
   return true
 }
 
-export default (
-  queues: Map<string, QueueWithCount>,
-  handlers: Map<string, QueueHandlers>,
-) =>
+export default (queues: Map<string, QueueObject>) =>
   async function disconnect(connection: Connection | null): Promise<void> {
     if (!connection) {
       return
@@ -68,12 +59,7 @@ export default (
     connection.queue = undefined
     connection.handlers = undefined
 
-    const shouldClose = removeQueueAndHandlers(
-      queues,
-      handlers,
-      queueId,
-      subQueueId,
-    )
+    const shouldClose = removeQueueAndHandlers(queues, queueId, subQueueId)
     if (shouldClose && queue) {
       try {
         // We need some activity towards the queue to "force" bull to close correctly
