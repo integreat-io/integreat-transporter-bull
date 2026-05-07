@@ -63,14 +63,14 @@ test('should connect, send, and listen', async (t) => {
   await wait(200) // Give it 200 ms to handle the job
 
   assert.equal(
-    sendResponse.status,
-    'ok',
-    `Send response was [${sendResponse.status}] ${sendResponse.error}`,
-  )
-  assert.equal(
     listenResponse.status,
     'ok',
     `Listen response was [${listenResponse.status}] ${listenResponse.error}`,
+  )
+  assert.equal(
+    sendResponse.status,
+    'ok',
+    `Send response was [${sendResponse.status}] ${sendResponse.error}`,
   )
   assert.equal(
     dispatch.callCount,
@@ -110,11 +110,6 @@ test('should listen and then stop listening', async (t) => {
   await wait(200) // Give it 200 ms to handle the job
 
   assert.equal(
-    sendResponse.status,
-    'ok',
-    `Send response was [${sendResponse.status}] ${sendResponse.error}`,
-  )
-  assert.equal(
     listenResponse.status,
     'ok',
     `Listen response was [${listenResponse.status}] ${listenResponse.error}`,
@@ -123,6 +118,11 @@ test('should listen and then stop listening', async (t) => {
     stopResponse.status,
     'ok',
     `stopListening() response was [${stopResponse.status}] ${stopResponse.error}`,
+  )
+  assert.equal(
+    sendResponse.status,
+    'ok',
+    `Send response was [${sendResponse.status}] ${sendResponse.error}`,
   )
   assert.equal(
     dispatch.callCount,

@@ -4,7 +4,7 @@ import sinon from 'sinon'
 import Bull, { Job } from 'bull'
 import connect from './connect.js'
 import wait from './tests/helpers/wait.js'
-import type { QueueWithCount } from './types.js'
+import type { QueueObject } from './types.js'
 
 import send from './send.js'
 
@@ -34,7 +34,7 @@ const action = {
 }
 
 const emit = () => undefined
-const queues = new Map<string, QueueWithCount>()
+const queues = new Map<string, QueueObject>()
 
 // Tests -- action
 

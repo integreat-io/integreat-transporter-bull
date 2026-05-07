@@ -5,8 +5,9 @@ import { isObject, isAction } from './utils/is.js'
 import type {
   Connection,
   HandlersObject,
-  QueueHandlers,
+  QueueObject,
   DispatchWithProgress,
+  MainHandlersObject,
 } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
@@ -23,11 +24,11 @@ const setIdentOnAction = (action: Action, ident: Ident): Action => ({
 })
 
 function resolveCallbacks(
-  handlers: Map<string, QueueHandlers>,
+  queues: Map<string, QueueObject>,
   queueId: string,
   subQueueId?: string,
 ): HandlersObject {
-  let queue = handlers.get(queueId)
+  let queue: MainHandlersObject | undefined = queues.get(queueId)
   if (subQueueId) {
     queue = queue?.subHandlers?.get(subQueueId)
   }
@@ -36,12 +37,12 @@ function resolveCallbacks(
 }
 
 const getHandlerErrorReason = (
-  handlers: Map<string, QueueHandlers>,
+  queues: Map<string, QueueObject>,
   queueId: string,
   name?: string,
 ) =>
-  !queueId || handlers.get(queueId)
-    ? !queueId || !name || handlers.get(queueId)?.subHandlers?.get(name)
+  !queueId || queues.get(queueId)
+    ? !queueId || !name || queues.get(queueId)?.subHandlers?.get(name)
       ? '`dispatch()` and `authenticate()` must be functions'
       : `No queue named '${queueId}:${name}`
     : `No queue named '${queueId}`
@@ -89,18 +90,19 @@ async function dispatchWithProgress(
 const normalizeSubQueueId = (name?: string) =>
   typeof name === 'string' && name !== '__default__' ? name : undefined
 
-async function handler(job: Job, handlers: Map<string, QueueHandlers>) {
+async function handler(job: Job, queues: Map<string, QueueObject>) {
   const { data, queue } = job
   const queueId = queue?.name
   const subQueueId = normalizeSubQueueId(job.name)
 
   const { dispatch, authenticate } = resolveCallbacks(
-    handlers,
+    queues,
     queueId,
     subQueueId,
   )
+
   if (typeof dispatch !== 'function' || typeof authenticate !== 'function') {
-    const errorReason = getHandlerErrorReason(handlers, queueId, subQueueId)
+    const errorReason = getHandlerErrorReason(queues, queueId, subQueueId)
     debugLog(`Could not handle action from queue. ${errorReason}`)
     throw new Error(`Could not handle action from queue. ${errorReason}`)
   }
@@ -134,9 +136,9 @@ function setHandlerObject(
   handlers: Map<string, HandlersObject>,
 ): [HandlersObject, boolean] {
   const obj = handlers.get(id) || ({} as HandlersObject) // This typing is ok, as we will set its values on the next two lines
+  const isFirst = obj.dispatch === undefined // If it is null, it has been cleared
   obj.dispatch = dispatch
   obj.authenticate = authenticate
-  const isFirst = !handlers.has(id)
   if (isFirst) {
     handlers.set(id, obj)
   }
@@ -144,7 +146,7 @@ function setHandlerObject(
 }
 
 function storeHandlers(
-  handlers: Map<string, QueueHandlers>,
+  queues: Map<string, QueueObject>,
   dispatch: DispatchWithProgress,
   authenticate: AuthenticateExternal,
   queueId: string,
@@ -153,11 +155,11 @@ function storeHandlers(
   // Set up queue handlers object
   if (!subQueueId) {
     // As there's no subQueueId, this is a main queue. Set up its handlers and return it
-    return setHandlerObject(dispatch, authenticate, queueId, handlers)
+    return setHandlerObject(dispatch, authenticate, queueId, queues)
   } else {
     // This is a sub queue. First make sure we have a queue object
-    const ret = setHandlerObject(null, null, queueId, handlers)
-    const queue = ret[0] as QueueHandlers // Get the handlers and force it to a QueueHandlers object
+    const ret = setHandlerObject(null, null, queueId, queues)
+    const queue: MainHandlersObject = ret[0]
     if (!queue.subHandlers) {
       // Make sure we have the `subHandlers` map
       queue.subHandlers = new Map()
@@ -172,7 +174,7 @@ function storeHandlers(
   }
 }
 
-export default (handlers: Map<string, QueueHandlers>) =>
+export default (queues: Map<string, QueueObject>) =>
   async function listen(
     dispatch: DispatchWithProgress,
     connection: Connection | null,
@@ -195,7 +197,7 @@ export default (handlers: Map<string, QueueHandlers>) =>
 
     // Store dispatch and authenticate handlers
     const [handlersObject, isFirstListenForQueue] = storeHandlers(
-      handlers,
+      queues,
       dispatch,
       authenticate,
       queueId,
@@ -209,13 +211,13 @@ export default (handlers: Map<string, QueueHandlers>) =>
       try {
         if (subQueueId) {
           queue.process(subQueueId, maxConcurrency, (job) =>
-            handler(job, handlers),
+            handler(job, queues),
           )
           debugLog(
             `Listening to queue '${queueId}' for sub queue '${subQueueId}'`,
           )
         } else {
-          queue.process(maxConcurrency, (job) => handler(job, handlers))
+          queue.process(maxConcurrency, (job) => handler(job, queues))
           debugLog(`Listening to queue '${queueId}'`)
         }
       } catch (error) {
