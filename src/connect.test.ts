@@ -465,7 +465,7 @@ test('should return redis options from individual params with connectTimeout', (
   assert.deepEqual(ret, expected)
 })
 
-type ReconnectOnErrorTestCase = {
+interface ReconnectOnErrorTestCase {
   input: ReconnectOnErrorStrategy | undefined
   expected: IoredisReconnectOnErrorStrategy | null
 }
@@ -518,6 +518,7 @@ for (const reconnectOnErrorTestCase of reconnectOnErrorTestCases) {
       assert.notEqual(ret.reconnectOnError, null)
       assert.notEqual(ret.reconnectOnError, undefined)
       assert.equal(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         ret.reconnectOnError!(new Error('test')),
         reconnectOnErrorTestCase.expected,
       )
