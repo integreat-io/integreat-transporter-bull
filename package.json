@@ -27,7 +27,8 @@
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "lint": "eslint --ext .ts src",
-    "verify": "npm run lint && npm run build && npm run test"
+    "check-types": "tsc --noEmit --strict",
+    "verify": "npm run lint && npm run check-types && npm run build && npm run test"
   },
   "repository": {
     "type": "git",
@@ -45,13 +46,13 @@
     "debug": "^4.4.3"
   },
   "devDependencies": {
-    "@integreat/ts-dev-setup": "^7.1.2",
+    "@integreat/ts-dev-setup": "^8.1.2",
     "@types/debug": "^4.1.12",
-    "@types/node": "^22.9.0",
+    "@types/node": "^22.15.33",
     "@types/sinon": "^17.0.4",
     "integreat": "^1.6.4",
     "ioredis": "^5.7.0",
-    "sinon": "^19.0.2",
-    "wait-on": "^8.0.1"
+    "sinon": "^21.0.0",
+    "wait-on": "^8.0.3"
   }
 }
