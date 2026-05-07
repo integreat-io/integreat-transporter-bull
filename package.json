@@ -25,7 +25,6 @@
     "predev": "npm run pretest",
     "postdev": "npm run posttest",
     "build": "tsc",
-    "coverage": "c8 report",
     "lint": "eslint --ext .ts src",
     "verify": "npm run lint && npm run build && npm run test"
   },
