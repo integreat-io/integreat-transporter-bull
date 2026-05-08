@@ -46,9 +46,9 @@
     "debug": "^4.4.3"
   },
   "devDependencies": {
-    "@integreat/ts-dev-setup": "^8.2.1",
+    "@integreat/ts-dev-setup": "^9.0.0",
     "@types/debug": "^4.1.13",
-    "@types/node": "^25.6.0",
+    "@types/node": "^25.6.2",
     "@types/sinon": "^21.0.1",
     "integreat": "^1.6.6",
     "ioredis": "^5.10.1",
