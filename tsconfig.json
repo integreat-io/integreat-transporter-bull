@@ -6,7 +6,6 @@
     "moduleResolution": "node16",
     "moduleDetection": "force",
     "declaration": true,
-    "resolveJsonModule": false,
     "sourceMap": true,
     "noEmitOnError": false,
     "strict": true,
@@ -18,11 +17,10 @@
     "alwaysStrict": true,
     "skipLibCheck": true,
     "removeComments": true,
-    "baseUrl": ".",
-    "paths": {
-      "*": ["node_modules/*"]
-    },
-    "outDir": "./dist"
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node"],
+    "rootDir": "./src",
+    "outDir": "./dist",
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
 }
