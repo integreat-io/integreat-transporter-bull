@@ -23,7 +23,7 @@ Example of use:
 
 ```javascript
 import Integreat from 'integreat'
-import bullTransporter from 'integreat-transport-bull'
+import bullTransporter from 'integreat-transporter-bull'
 import defs from './config'
 
 const great = Integreat.create(defs, {
@@ -70,10 +70,11 @@ Available properties for the `options` object:
   and in effect creating a "sub-queue". When you don't specify subQueueId`, the
   default job type will be used.
 - `maxConcurrency`: Specifies how many parallell jobs Integreat may pick from
-  the queue. Note that when setting up sub queues, the `maxConcurrency` of the
-  first sub queue will be used, as one common handler is set up for all queues.
-  There is no other way of doing this, as Bull would add the `maxConcurrency`
-  numbers together if every sub queue had its own handler. Default is `1`.
+  the queue. Note that when setting up sub queues, one shared handler serves
+  all sub-queues of the same main queue, so only the `maxConcurrency` from the
+  first sub queue applies. Giving each sub queue its own handler is not an
+  option, as Bull would then sum the `maxConcurrency` values across them.
+  Default is `1`.
 - `dontListen`: When `true`, Integreat will not listen for new jobs on the
   queue. This is much the same as setting `maxConcurrency` to 0, but it also
   prevents Integreat from creating a queue listener. Default is `false`.
@@ -97,8 +98,11 @@ The available properties for the `redis` options object are as follow:
 - `port`: The Redis server port, default is `6379`
 - `auth`: The Redis username as `key` and Redis password as `secret`
 - `tls`: Set to `true` to enable TLS. Default is `false`
-- `connectTimeout`: How long in milliseconds the client will wait before killing a socket due to inactivity during initial connection. Defaults to 10000 (10 seconds).
-- `reconnectOnError`: Whether or not to reconnect (and optionally resend failed command) on Redis errors. Defaults to `noReconnect`. Options are:
+- `connectTimeout`: How long in milliseconds the client will wait before killing
+  a socket due to inactivity during initial connection. Defaults to 10000 (10
+  seconds).
+- `reconnectOnError`: Whether or not to reconnect (and optionally resend failed
+  command) on Redis errors. Defaults to `noReconnect`. Options are:
   - `noReconnect`: Do not reconnect.
   - `reconnectOnly`: Reconnect. Do not resend failed command.
   - `reconnectAndResend`: Reconnect and resend failed command.
@@ -115,6 +119,15 @@ listening.
 `meta.queue` may also be a Unix timestamp (millieseconds since epoc, aka
 1970-01-01), in which case the action will be delayed until the timestamp is
 reached, and then dispatched as normal.
+
+### Stop listening
+
+The transporter implements Integreat's `stopListening()` method. When called,
+the queue listener for that connection stops picking up new jobs (its
+`dispatch`/`authenticate` handlers are detached), while the underlying Bull
+queue stays connected so that `send()` keeps working and other connections
+sharing the same queue are unaffected. The connection is fully torn down only
+on `disconnect()`.
 
 ### Debugging
 
