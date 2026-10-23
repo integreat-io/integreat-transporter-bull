@@ -226,7 +226,7 @@ test('should not touch action id', async () => {
   const processFn = processStub.args[0][1] // Get the internal job handler
   await processFn(job) // Call internal handler to make sure it calls dispatch
 
-  assert.deepEqual(ret.status, 'ok', ret.error)
+  assert.deepEqual(ret.status, 'ok')
   assert.deepEqual(dispatch.args[0][0], expectedAction)
 })
 
@@ -243,7 +243,7 @@ test('should not set action id when missing', async () => {
   const processFn = processStub.args[0][1] // Get the internal job handler
   await processFn(job) // Call internal handler to make sure it calls dispatch
 
-  assert.deepEqual(ret.status, 'ok', ret.error)
+  assert.deepEqual(ret.status, 'ok')
   assert.deepEqual(dispatch.args[0][0], expectedAction)
 })
 

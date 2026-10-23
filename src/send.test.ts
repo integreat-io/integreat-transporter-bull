@@ -53,7 +53,7 @@ test('should send job with action and return status and data', async (t) => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   const jobs = await queue.getWaiting()
   assert.equal(jobs.length, 1)
   assert.deepEqual(jobs[0].data, expectedAction)
@@ -84,7 +84,7 @@ test('should send job with action at the time specified by a numeric meta.queue'
 
   const ret = await send(actionWithDelay, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   const jobs = await queue.getDelayed()
   assert.equal(jobs.length, 1)
   assert.deepEqual(jobs[0].data, expectedAction)
@@ -113,7 +113,7 @@ test('should send job to queue with subQueueId', async (t) => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   const jobs = await queue.getWaiting()
   assert.equal(jobs.length, 1)
   assert.deepEqual(jobs[0].data.type, 'SET')
@@ -154,7 +154,7 @@ test('should send job to queue with subQueueId from action meta', async (t) => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   const jobs = await queue.getWaiting()
   assert.equal(jobs.length, 1)
   assert.deepEqual(jobs[0].data, expectedAction)
@@ -195,7 +195,7 @@ test('should remove queue and auth from action meta', async (t) => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   const jobs = await queue.getWaiting()
   assert.equal(jobs.length, 1)
   assert.deepEqual(jobs[0].data, expectedAction)
@@ -216,7 +216,7 @@ test('should use action id as job id', async (t) => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   assert.equal(ret.data?.id, 'job1')
 })
 
@@ -226,7 +226,7 @@ test('should return error when queue throws', async () => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'error', ret.error)
+  assert.equal(ret.status, 'error')
   assert(ret.error?.startsWith('Sending to queue failed.'))
 })
 
@@ -235,7 +235,7 @@ test('should return error when no queue', async () => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'error', ret.error)
+  assert.equal(ret.status, 'error')
   assert.equal(ret.error, 'Cannot send action to queue. No queue')
 })
 
@@ -244,7 +244,7 @@ test('should return error when no connection', async () => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'error', ret.error)
+  assert.equal(ret.status, 'error')
   assert.equal(ret.error, 'Cannot send action to queue. No queue')
 })
 
@@ -267,7 +267,7 @@ test('should clean waiting jobs with SERVICE action', async (t) => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   const jobs = await queue.getWaiting()
   assert.equal(jobs.length, 0)
 })
@@ -289,7 +289,7 @@ test('should not clean waiting jobs newer than given ms with SERVICE action', as
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   const jobs = await queue.getWaiting()
   assert.equal(jobs.length, 1)
 })
@@ -311,7 +311,7 @@ test('should clean scheduled jobs with SERVICE action', async (t) => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   const jobs = await queue.getDelayed()
   assert.equal(jobs.length, 0)
 })
@@ -332,7 +332,7 @@ test('should clean completed jobs with SERVICE action', async (t) => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   assert.equal(cleanSpy.callCount, 1)
   assert.equal(cleanSpy.args[0][0], 0)
   assert.equal(cleanSpy.args[0][1], 'completed')
@@ -356,7 +356,7 @@ test('should clean completed jobs older than given ms with SERVICE action', asyn
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   assert.equal(cleanSpy.callCount, 1)
   assert.equal(cleanSpy.args[0][0], 3600000)
   assert.equal(cleanSpy.args[0][1], 'completed')
@@ -380,7 +380,7 @@ test('should return error when cleaning fails', async (t) => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'error', ret.error)
+  assert.equal(ret.status, 'error')
   assert.equal(ret.error, 'Cleaning of queue failed. Error: No queue!')
 
   cleanSpy.restore()
@@ -405,7 +405,7 @@ test('should clean more job types with the same SERVICE action', async (t) => {
 
   const ret = await send(action, connection)
 
-  assert.equal(ret.status, 'ok', ret.error)
+  assert.equal(ret.status, 'ok')
   const jobsWaiting = await queue.getWaiting()
   const jobsScheduled = await queue.getDelayed()
   assert.equal(jobsWaiting.length, 0)
