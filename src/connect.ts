@@ -1,6 +1,4 @@
 import Bull, { QueueOptions } from 'bull'
-import { RedisOptions as IORedisOptions } from 'ioredis'
-import { ReconnectOnError } from 'ioredis/built/redis/RedisOptions.js'
 import debug from 'debug'
 import { isObject } from './utils/is.js'
 import type {
@@ -14,6 +12,9 @@ import type {
 import { ReconnectOnErrorStrategy } from './types.js'
 
 const debugLog = debug('integreat:transporter:bull')
+
+type BullRedisOptions = Exclude<NonNullable<QueueOptions['redis']>, string>
+type ReconnectOnError = NonNullable<BullRedisOptions['reconnectOnError']>
 
 const renameRedisOptions = ({
   uri,
@@ -68,7 +69,7 @@ const generateRedisOptions = (redis?: RedisOptions | string | null) =>
 export function prepareRedisOptions(
   redis?: RedisOptions | string | null,
   auth?: Authentication | null,
-): IORedisOptions & { uri?: string } {
+): BullRedisOptions & { uri?: string } {
   const { key, secret } = auth || {}
   const options = generateRedisOptions(redis)
 

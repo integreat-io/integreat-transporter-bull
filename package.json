@@ -51,7 +51,6 @@
     "@types/node": "^26.6.5",
     "@types/sinon": "^22.0.1",
     "integreat": "^1.7.1",
-    "ioredis": "^5.11.1",
     "sinon": "^22.1.0",
     "wait-on": "^9.5.1"
   }
